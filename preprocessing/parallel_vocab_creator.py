@@ -2,11 +2,13 @@ from collections import Counter
 from itertools import chain, dropwhile
 import multiprocessing
 import os
-import timing
 import pickle
 import gzip
 import logging
-# import sys
+	
+import sys
+sys.path.insert(0, '../utilities')
+import timing
 
 def log_result(result):
     l.acquire()
@@ -26,7 +28,7 @@ def trimVocab(counter, frequency, max_size):
     counter['<UNK>'] = unk_count
     # vocab = counter.most_common(max_size - 1)
     # vocab.append(('<UNK>',unk_count))
-    return counter.most_common(max_size)
+    return dict(counter.most_common(max_size))
 
 def save(obj, path):
     with gzip.open(path + '.pklz','wb') as f:
@@ -41,8 +43,9 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    src_folder = "tokenized_gigaword"
+    src_folder = "/media/fede/fedeProSD/eyewordembed/dataset/training_decomp"
 
+    os.chdir('../vocab')
     if not os.path.isfile('word_count.pklz'):
         pool = multiprocessing.Pool(4)
         counter = Counter()
@@ -64,13 +67,17 @@ if __name__ == '__main__':
     logger.info("Trimming vocabulary, excluding words with frequency less than " + str(frequency) + "...")
     old = len(word_count)
     vocab = trimVocab(word_count, frequency, 400000)
+
+    logger.info("Saving trimmed word count to file 'word_count_trimmed.pklz'")
+    save(vocab, 'word_count_trimmed')
+
     new = len(vocab)
     logger.info(str(old-new) + " types turned into <UNK>")
     logger.info("Vocabulary size: " + str(new))
 
     
     logger.info("Generating word2id...")
-    word2id = {word: i for i, (word, count) in enumerate(vocab)}
+    word2id = {word: i for i, (word, count) in enumerate(vocab.items())}
 
     logger.info("Saving word2id...")
     save(word2id, 'word2id')
@@ -79,4 +86,4 @@ if __name__ == '__main__':
     id2word = {v: k for k, v in word2id.items()}
     
     logger.info("Saving id2word...")
-    save(word2id, 'id2word')
+    save(id2word, 'id2word')
