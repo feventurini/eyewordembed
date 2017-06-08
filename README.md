@@ -1,1 +1,3 @@
-# eyewordembed
+# Training Neural Word Embeddings with Eye-tracking data
+Eye movement in reading involves many cognitive systems, including language processing. Several psycholinguistics studies have demonstrated how eye-tracking data and reading patterns inherently hide a lot of information regarding language and words. In this work, we intend to leverage this knowledge in order to produce high quality word embeddings. In particular,
+we propose a novel approach in which a neural architecture is jointly trained to learn word representation and predict gaze duration, in a multi-task learning set up. This project might lead us to correlate the gaze measurements with semantic and syntactic similarities, while producing high quality, reliable and usable word embeddings.
