@@ -9,6 +9,7 @@ import logging
 import sys
 sys.path.insert(0, '../utilities')
 import timing
+import util
 
 def log_result(result):
     l.acquire()

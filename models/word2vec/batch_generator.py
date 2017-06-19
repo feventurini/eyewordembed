@@ -16,18 +16,18 @@ def readcompressed2(file):
             return list(map(lambda x : x.strip().decode('UTF-8'), f))
             #return list(map(lambda x : np.array(x.strip().split()), f))
  
-def readcompressed(file):
-    with tarfile.open(file) as tar:
-        with tar.extractfile(tar.next()) as f:
-            l = list()
-            for line in f:
-                l += line.strip().split()
+def readcompressed(tarinfo, tarball):
+        f = tarball.extractfile(tarinfo)
+        l = list()
+        for line in f:
+            l += line.strip().split()
         return np.array(l, dtype=np.int32)
 
 class GigawordBatchIterator(chainer.dataset.Iterator):
 
-    def __init__(self, src_folder, window, batch_size, repeat=True):
-        self.files = listfiles(src_folder)
+    def __init__(self, tar_file, window, batch_size, repeat=True):
+        self.tarball = tarfile.open(tar_file)
+        self.files = self.tarball.getmembers()
         random.shuffle(self.files)
         self.current_file_index = -1
 
@@ -47,7 +47,7 @@ class GigawordBatchIterator(chainer.dataset.Iterator):
 
     def load_next_file(self):
         self.current_file_index += 1
-        self.current_file = readcompressed(self.files[self.current_file_index])
+        self.current_file = readcompressed(self.files[self.current_file_index], self.tarball)
         self.current_position = 0
         self.order = np.random.permutation(len(self.current_file) - self.window * 2).astype(np.int32)
 
@@ -80,12 +80,12 @@ class GigawordBatchIterator(chainer.dataset.Iterator):
             self.is_new_epoch = False
             self.current_position = i_end
 
-        #print (center, context)
+        print (center, context)
         return center, context
 
     @property
     def epoch_detail(self):
-        return self.epoch + float(self.current_file_index) / len(self.files)
+        return self.epoch + float(self.current_file_index) / len(self.files) + float(self.current_position) / len(self.order)
 
     def serialize(self, serializer):
         self.current_position = serializer('current_position', self.current_position)

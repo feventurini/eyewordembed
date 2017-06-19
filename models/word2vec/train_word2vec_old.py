@@ -148,6 +148,7 @@ class WindowIterator(chainer.dataset.Iterator):
             self.is_new_epoch = False
             self.current_position = i_end
 
+        print (center,context)
         return center, context
 
     @property

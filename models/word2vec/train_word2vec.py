@@ -19,17 +19,15 @@ from chainer import training
 from chainer.training import extensions
 
 import sys
-sys.path.insert(0, '../preprocessing')
+sys.path.insert(0, '../../utilities')
 
 import batch_generator as bg
-import parallel_vocab_creator as pvc
 
-
-word2id_path = '../vocab/word2id'
-id2word_path = '../vocab/id2word'
-word_count_path = '../vocab/word_count_trimmed'
-gigaword_train_folder = '../gigaword_train'
-gigaword_val_folder = '../gigaword_val'
+word2id_path = '../../vocab/word2id'
+id2word_path = '../../vocab/id2word'
+word_count_path = '../../vocab/word_count_trimmed'
+gigaword_train_folder = '../../gigaword_train.tar.gz'
+gigaword_val_folder = '../../gigaword_val.tar.gz'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', '-g', default=-1, type=int,
@@ -133,10 +131,10 @@ if args.gpu >= 0:
     cuda.get_device_from_id(args.gpu).use()
 
 
-vocab = pvc.load(word2id_path)
+vocab = util.load(word2id_path)
 n_vocab = len(vocab)
-index2word = pvc.load(id2word_path)
-counts = dict((vocab[k],v) for k,v in pvc.load(word_count_path).items())
+index2word = util.load(id2word_path)
+counts = dict((vocab[k],v) for k,v in util.load(word_count_path).items())
 
 print('n_vocab: %d' % n_vocab)
 
