@@ -1,1 +1,0 @@
-- When modeling the eye-tracking data task, how should I set it up? If we consider the word "the", for example, depending on the context, it will have different fixation durations. This implicitly means that the context is relevant. Should I consider also the context in a word2vec-like setup instead of simply doing word -> embed -> prediction?
