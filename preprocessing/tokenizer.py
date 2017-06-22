@@ -33,6 +33,8 @@ class SentenceTokenizer():
 				# tokens = [t.lower() for t in all_tokens if not all(char in puncs for char in t)]
 				print(' '.join(tokens), file=f)
 
-pool = Pool(4)
-pool.map(tokenize_op, os.listdir(src_folder))
-
+#pool = Pool(4)
+#pool.map(tokenize_op, os.listdir(src_folder))
+src_folder = '.'
+dest_folder = '.'
+tokenize_op('dundee.txt')

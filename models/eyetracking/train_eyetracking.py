@@ -183,7 +183,7 @@ if __name__ == '__main__':
 
     print('GPU: {}'.format(args.gpu))
     print('# unit: {}'.format(args.unit))
-    print('Minibatch-size: {}'.format(args.batchsize))
+    #print('Minibatch-size: {}'.format(args.batchsize))
     print('# epoch: {}'.format(args.epoch))
     print('Output type: {}'.format(args.out_type))
 

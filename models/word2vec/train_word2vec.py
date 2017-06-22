@@ -5,33 +5,18 @@ This code implements skip-gram model and continuous-bow model.
 """
 import argparse
 import collections
-
 import numpy as np
-
-import chainer
-from chainer import cuda
-import chainer.functions as F
-import chainer.initializers as I
-import chainer.links as L
-import chainer.optimizers as O
-from chainer import reporter
-from chainer import training
-from chainer.training import extensions
+import gensim
+import logging
+import os
 
 import sys
 sys.path.insert(0, '../../utilities')
+import timing
 
-import batch_generator as bg
-
-word2id_path = '../../vocab/word2id'
-id2word_path = '../../vocab/id2word'
-word_count_path = '../../vocab/word_count_trimmed'
-gigaword_train_folder = '../../gigaword_train.tar.gz'
-gigaword_val_folder = '../../gigaword_val.tar.gz'
+train_tarball = '../../gigaword_train.tar.bz2'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--gpu', '-g', default=-1, type=int,
-                    help='GPU ID (negative value indicates CPU)')
 parser.add_argument('--unit', '-u', default=100, type=int,
                     help='number of units')
 parser.add_argument('--window', '-w', default=5, type=int,
@@ -41,12 +26,12 @@ parser.add_argument('--batchsize', '-b', type=int, default=1000,
 parser.add_argument('--epoch', '-e', default=20, type=int,
                     help='number of epochs to learn')
 parser.add_argument('--model', '-m', choices=['skipgram', 'cbow'],
-                    default='skipgram',
+                    default='cbow',
                     help='model type ("skipgram", "cbow")')
 parser.add_argument('--negative-size', default=5, type=int,
                     help='number of negative samples')
 parser.add_argument('--out-type', '-o', choices=['hsm', 'ns', 'original'],
-                    default='hsm',
+                    default='ns',
                     help='output model type ("hsm": hierarchical softmax, '
                     '"ns": negative sampling, "original": no approximation)')
 parser.add_argument('--out', default='result',
@@ -54,13 +39,8 @@ parser.add_argument('--out', default='result',
 parser.add_argument('--test', dest='test', action='store_true')
 parser.set_defaults(test=False)
 
-args = parser.parse_args()
+args = parser.parse_args() 
 
-if args.gpu >= 0:
-    chainer.cuda.get_device_from_id(args.gpu).use()
-    cuda.check_cuda_available()
-
-print('GPU: {}'.format(args.gpu))
 print('# unit: {}'.format(args.unit))
 print('Window: {}'.format(args.window))
 print('Minibatch-size: {}'.format(args.batchsize))
@@ -70,118 +50,51 @@ print('Output type: {}'.format(args.out_type))
 print('')
 
 
-class ContinuousBoW(chainer.Chain):
-
-    def __init__(self, n_vocab, n_units, loss_func):
-        super(ContinuousBoW, self).__init__()
-
-        with self.init_scope():
-            self.embed = L.EmbedID(
-                n_vocab, n_units, initialW=I.Uniform(1. / n_units))
-            self.loss_func = loss_func
-
-    def __call__(self, x, context):
-        e = self.embed(context)
-        h = F.sum(e, axis=1) * (1. / context.shape[1])
-        loss = self.loss_func(h, x)
-        reporter.report({'loss': loss}, self)
-        return loss
-
-
-class SkipGram(chainer.Chain):
-
-    def __init__(self, n_vocab, n_units, loss_func):
-        super(SkipGram, self).__init__()
-
-        with self.init_scope():
-            self.embed = L.EmbedID(
-                n_vocab, n_units, initialW=I.Uniform(1. / n_units))
-            self.loss_func = loss_func
-
-    def __call__(self, x, context):
-        e = self.embed(context)
-        shape = e.shape
-        x = F.broadcast_to(x[:, None], (shape[0], shape[1]))
-        e = F.reshape(e, (shape[0] * shape[1], shape[2]))
-        x = F.reshape(x, (shape[0] * shape[1],))
-        loss = self.loss_func(e, x)
-        reporter.report({'loss': loss}, self)
-        return loss
-
-
-class SoftmaxCrossEntropyLoss(chainer.Chain):
-
-    def __init__(self, n_in, n_out):
-        super(SoftmaxCrossEntropyLoss, self).__init__()
-        with self.init_scope():
-            self.out = L.Linear(n_in, n_out, initialW=0)
-
-    def __call__(self, x, t):
-        return F.softmax_cross_entropy(self.out(x), t)
-
-def convert(batch, device):
-    center, context = batch
-    if device >= 0:
-        center = cuda.to_gpu(center)
-        context = cuda.to_gpu(context)
-    return center, context
-
-
-if args.gpu >= 0:
-    cuda.get_device_from_id(args.gpu).use()
-
-
-vocab = util.load(word2id_path)
-n_vocab = len(vocab)
-index2word = util.load(id2word_path)
-counts = dict((vocab[k],v) for k,v in util.load(word_count_path).items())
-
-print('n_vocab: %d' % n_vocab)
-
 if args.out_type == 'hsm':
-    HSM = L.BinaryHierarchicalSoftmax
-    tree = HSM.create_huffman_tree(counts)
-    loss_func = HSM(args.unit, tree)
-    loss_func.W.data[...] = 0
+	hs = 1
+	negative = 0
 elif args.out_type == 'ns':
-    cs = [counts[w] for w in range(len(counts))]
-    loss_func = L.NegativeSampling(args.unit, cs, args.negative_size)
-    loss_func.W.data[...] = 0
+	hs = 0
+	negative = 5
 elif args.out_type == 'original':
-    loss_func = SoftmaxCrossEntropyLoss(args.unit, n_vocab)
+	hs = 0
+	negative = 0
 else:
     raise Exception('Unknown output type: {}'.format(args.out_type))
 
 if args.model == 'skipgram':
-    model = SkipGram(n_vocab, args.unit, loss_func)
+	sg = 1
 elif args.model == 'cbow':
-    model = ContinuousBoW(n_vocab, args.unit, loss_func)
+	sg = 0
 else:
     raise Exception('Unknown model type: {}'.format(args.model))
 
-if args.gpu >= 0:
-    model.to_gpu()
+alpha = 0.025
+min_count = 5
+max_vocab_size = 400000
+sub_sampling = 0.001
+n_workers = 4
+cbow_mean = 1 # 1:mean, 0:sum
 
-optimizer = O.Adam()
-optimizer.setup(model)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-train_iter = bg.GigawordBatchIterator(gigaword_train_folder, args.window, args.batchsize)
-val_iter = bg.GigawordBatchIterator(gigaword_val_folder, args.window, args.batchsize, repeat=False)
+sentences = gensim.models.word2vec.LineSentence(train_tarball)
 
-updater = training.StandardUpdater(train_iter, optimizer, converter=convert, device=args.gpu)
-trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+model = gensim.models.word2vec.Word2Vec(sentences=None, size=args.unit, alpha=alpha, window=args.window, min_count=min_count, max_vocab_size=max_vocab_size, 
+sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, 
+iter=args.epoch, null_word=0, trim_rule=None, sorted_vocab=1, batch_words=args.batchsize)
 
-trainer.extend(extensions.Evaluator(val_iter, model, converter=convert, device=args.gpu))
+if os.path.isfile(args.out + os.sep + "init_vocab.model"):
+	model.reset_from(gensim.models.Word2Vec.load(args.out + os.sep + "init_vocab.model"))
+else:
+	logging.info("Building vocab...")
+	model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
+	logging.info("Vocabulary built")
+	logging.info("Saving initial model with built vocabulary...")
+	model.save(args.out + os.sep + "init_vocab.model")
 
-trainer.extend(extensions.LogReport())
-trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+logging.info("Starting training...")
+report_delay = 3.0
+model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
 
-trainer.extend(extensions.ProgressBar())
-trainer.run()
-
-with open('word2vec.model', 'w') as f:
-    f.write('%d %d\n' % (len(index2word), args.unit))
-    w = cuda.to_cpu(model.embed.W.data)
-    for i, wi in enumerate(w):
-        v = ' '.join(map(str, wi))
-        f.write('%s %s\n' % (index2word[i], v))
+model.save(args.out + os.sep + "word2vec_gigaword_" + args.unit + "_" + args.model + "_" + args.out + ".model")

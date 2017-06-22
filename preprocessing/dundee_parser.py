@@ -34,7 +34,7 @@ class DundeeTreebankParser():
 	def parserow(self, row):
 		return [self.wantedParsing[i](row[i].strip()) for i in range(len(row)) if i in self.wantedSet]
 
-	def parseFile(self, file, wantedSet, wantedParsing):
+	def parseFile(self, csv_path, wantedSet, wantedParsing):
 		l = list()
 		with open(csv_path,'r') as f:
 			r = csv.reader(f, delimiter='\t')
@@ -64,14 +64,31 @@ class DundeeTreebankParser():
 
 			rev_mapping = {v:k for k,v in self.map.items()}
 			return {rev_mapping[j]:result[i] for i,j in enumerate(sorted(self.wantedSet))}
+	
+	def fileToText(self, file, out):
+		l = list()
+		with open(csv_path,'r') as f:
+			with open(out,'w') as o:
+				r = csv.reader(f, delimiter='\t')
+				self.initiateParser(next(r))
+				for row in r:
+					if self.previous == row[self.map['WNUM']]:
+						continue
+					self.previous = row[self.map['WNUM']]
+					l.append(row[self.map["WORD"]])
+				print(' '.join(l), file=o)
+
+
+
+
 
 wantedSet = ['First_pass_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'WLEN', 'WORD', 'WNUM', 'UniversalPOS']
 wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'WNUM':float, 'UniversalPOS':str}
 
 csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok.csv'
 dtp = DundeeTreebankParser()
-result = dtp.parseFile(csv_path, wantedSet, wantedParsing)
+#result = dtp.parseFile(csv_path, wantedSet, wantedParsing)
 
-for k,v in result.items():
-	util.save(v, '/media/fede/fedeProSD/eyewordembed/models/eyetracking/dundee_parsed/' + k)
-
+#for k,v in result.items():
+#	util.save(v, '/media/fede/fedeProSD/eyewordembed/models/eyetracking/dundee_parsed/' + k)
+dtp.fileToText(csv_path, 'dundee.txt')
