@@ -21,7 +21,7 @@ parser.add_argument('--unit', '-u', default=100, type=int,
                     help='number of units')
 parser.add_argument('--window', '-w', default=5, type=int,
                     help='window size')
-parser.add_argument('--batchsize', '-b', type=int, default=1000,
+parser.add_argument('--batchsize', '-b', type=int, default=10000,
                     help='learning minibatch size')
 parser.add_argument('--epoch', '-e', default=20, type=int,
                     help='number of epochs to learn')
@@ -49,7 +49,6 @@ print('Training model: {}'.format(args.model))
 print('Output type: {}'.format(args.out_type))
 print('')
 
-
 if args.out_type == 'hsm':
 	hs = 1
 	negative = 0
@@ -73,7 +72,7 @@ alpha = 0.025
 min_count = 5
 max_vocab_size = 400000
 sub_sampling = 0.001
-n_workers = 4
+n_workers = 3
 cbow_mean = 1 # 1:mean, 0:sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -83,6 +82,9 @@ sentences = gensim.models.word2vec.LineSentence(train_tarball)
 model = gensim.models.word2vec.Word2Vec(sentences=None, size=args.unit, alpha=alpha, window=args.window, min_count=min_count, max_vocab_size=max_vocab_size, 
 sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, 
 iter=args.epoch, null_word=0, trim_rule=None, sorted_vocab=1, batch_words=args.batchsize)
+
+if not os.path.isdir(args.out):
+	os.makedirs(args.out)
 
 if os.path.isfile(args.out + os.sep + "init_vocab.model"):
 	model.reset_from(gensim.models.Word2Vec.load(args.out + os.sep + "init_vocab.model"))
@@ -97,4 +99,4 @@ logging.info("Starting training...")
 report_delay = 3.0
 model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
 
-model.save(args.out + os.sep + "word2vec_gigaword_" + args.unit + "_" + args.model + "_" + args.out + ".model")
+model.save(args.out + os.sep + "word2vec_gigaword_" + str(args.unit) + "_" + args.model + "_" + args.out_type + ".model")
