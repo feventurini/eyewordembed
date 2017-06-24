@@ -29,13 +29,10 @@ def glove2word2vec(glove_input_file, word2vec_output_file):
     return num_lines, num_dims
 
 
-
 if __name__ == '__main__': 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i", "--input", required=True,
-        help="Input word2vec model")
+    parser.add_argument( 'input', metavar='input', type=str, help="Input word2vec model")
     parser.add_argument( "-g", "--gensim", 
                         required=False, action='store_true',
                         help="Add this option if the model is in gensim format")

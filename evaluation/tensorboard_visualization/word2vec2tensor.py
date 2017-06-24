@@ -49,11 +49,14 @@ def word2vec2tensor(word2vec_model_path, tensor_filename, gensim_model=False, bi
     else:
         model = gensim.models.KeyedVectors.load_word2vec_format(word2vec_model_path, binary=binary)
     
-    outfiletsv = tensor_filename + '_tensor.tsv'
-    outfiletsvmeta = tensor_filename + '_metadata.tsv'
+    if not os.path.isdir('tsv_data'):
+        os.makedirs('tsv_data')
+        
+    outfiletsv = os.path.join('tsv_data', tensor_filename + '_tensor.tsv')
+    outfiletsvmeta = os.path.join('tsv_data', tensor_filename + '_metadata.tsv')
 
-    outfiletsv_20 = tensor_filename + '_20k_tensor.tsv'
-    outfiletsvmeta_20 = tensor_filename + '_20k_metadata.tsv'    
+    outfiletsv_20 = os.path.join('tsv_data', tensor_filename + '_20k_tensor.tsv')
+    outfiletsvmeta_20 = os.path.join('tsv_data', tensor_filename + '_20k_metadata.tsv')  
     
     counter = 0
     with open(outfiletsv, 'w+') as file_vector:

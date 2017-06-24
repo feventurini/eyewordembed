@@ -3,3 +3,11 @@ gigaword_train.tar.bz2
 gigaword_train.tar.gz
 gigaword_val.tar.gz
 /vocab
+/evaluation/eval_log
+/evaluation/vsmlib
+/evaluation/tensorboard_visualization/log
+/evaluation/tensorboard_visualization/tsv_data
+/evaluation/vectors
+*__pycache__
+/models/word2vec/result
+*.pyc
