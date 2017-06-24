@@ -8,30 +8,6 @@ import numpy as np
 import tensorflow as tf
 #logger = logging.getLogger(__name__)
 
-def word2vec2tensor(word2vec_model_path,tensor_filename, binary=False):
-    '''
-    Convert Word2Vec mode to 2D tensor TSV file and metadata file
-    Args:
-        param1 (str): word2vec model file path
-        param2 (str): filename prefiembedding_var
-        param2 (bool): set True to use a binary Word2Vec model, defaults to False
-    '''    
-    # model = gensim.models.KeyedVectors.load_word2vec_format(word2vec_model_path, binary=binary)
-    model = gensim.models.Word2Vec.load(word2vec_model_path).wv
-    outfiletsv = tensor_filename + '_tensor.tsv'
-    outfiletsvmeta = tensor_filename + '_metadata.tsv'
-    
-    with open(outfiletsv, 'w+') as file_vector:
-        with open(outfiletsvmeta, 'w+') as file_metadata:
-            for word in model.index2word:
-                file_metadata.write(word + '\n')
-                vector_row = '\t'.join(map(str, model[word]))
-                file_vector.write(vector_row + '\n')
-    
-    logger.info("2D tensor file saved to %s" % outfiletsv)
-    logger.info("Tensor metadata file saved to %s" % outfiletsvmeta)
-
-
 def get_glove_info(glove_file_name):
     """Return the number of vectors and dimensions in a file in GloVe format."""
     with smart_open(glove_file_name) as f:
@@ -53,58 +29,55 @@ def glove2word2vec(glove_input_file, word2vec_output_file):
     return num_lines, num_dims
 
 
-# binary = True
-# print('Loading model..')
-# try:
-#     model = gensim.models.KeyedVectors.load_word2vec_format(sys.argv[1], binary=binary)
-# except Exception as e:
-#     model = gensim.models.Word2Vec.load(sys.argv[1])
-# else:
-#     model = gensim.models.Word2Vec.load(sys.argv[1])
 
-# print('Model successfully loaded')
+if __name__ == '__main__': 
 
-# print('Preparing metadata for visualization..')
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i", "--input", required=True,
+        help="Input word2vec model")
+    parser.add_argument( "-g", "--gensim", 
+                        required=False, action='store_true',
+                        help="Add this option if the model is in gensim format")
+    parser.add_argument( "-b", "--binary", 
+                        required=False, action='store_true',
+                        help="If word2vec model in binary format, set True, else False")
+    args = parser.parse_args()
 
-# # create a list of vectors
-# embedding = np.empty((len(model.wv.index2word), model.wv[]), dtype=np.float32)
-# for i, word in enumerate(word2vec.words):
-#     embedding[i] = word2vec[word]
-# summary_writer = tf.summary.FileWriter('log')
+    # load model
+    if args.gensim:
+        model = gensim.models.Word2Vec.load(args.input).wv
+    else:
+        model = gensim.models.KeyedVectors.load_word2vec_format(args.input, binary=args.binary)
 
-# # setup a TensorFlow session
-# tf.reset_default_graph()
-# sess = tf.InteractiveSession()
+    if not os.path.isdir('log'):
+        os.makedirs('log')
 
-# embedding_var = tf.Variable(tf.random_normal(embedding.shape), name='embedding')
-# place = tf.placeholder(tf.float32, shape=embedding.shape)
-# set_embedding_var = tf.assign(embedding_var, place, validate_shape=False)
+    embedding = np.empty((len(model.index2word), len(model[model.index2word[0]])), dtype=np.float32)
+    with open(os.path.join('log', 'metadata.tsv'), 'w+') as file_metadata:
+        for i, word in enumerate(model.index2word):
+            file_metadata.write(word + '\n')
+            embedding[i] = model[word]
 
-# sess.run(tf.global_variables_initializer())
-# sess.run(set_embedding_var, feed_dict={place: embedding})
+    # setup a TensorFlow session
+    tf.reset_default_graph()
+    sess = tf.InteractiveSession()
+    embedding_var = tf.Variable(tf.zeros(embedding.shape), name='embedding')
+    place = tf.placeholder(tf.float32, shape=embedding.shape)
+    set_x = tf.assign(embedding_var, place, validate_shape=False)
+    sess.run(tf.global_variables_initializer())
+    sess.run(set_x, feed_dict={place: embedding})
 
-# if not os.path.isdir('log'):
-#     os.makedirs('log')
+    # create a TensorFlow summary writer
+    summary_writer = tf.summary.FileWriter('log')
+    config = projector.ProjectorConfig()
+    embedding_conf = config.embeddings.add()
+    embedding_conf.tensor_name = embedding_var.name
+    embedding_conf.metadata_path = os.path.join('log', 'metadata.tsv')
+    projector.visualize_embeddings(summary_writer, config)
 
-# # write labels
-# with open(outfiletsvmeta, 'w+') as file_metadata:
-#     for word in model.index2word:
-#         file_metadata.write(str(gensim.utils.to_utf8(word) + gensim.utils.to_utf8('\n')))
-#         vector_row = '\t'.join(map(str, model[word]))
-#         file_vector.write(vector_row + '\n')
+    # save the model
+    saver = tf.train.Saver()
+    saver.save(sess, os.path.join('log', "model.ckpt"))
 
-# # create a TensorFlow summary writer
-# config = projector.ProjectorConfig()
-# embedding_conf = config.embeddings.add()
-# embedding_conf.tensor_name = embedding_var.name
-# embedding_conf.metadata_path = os.path.join('log', 'metadata.tsv')
-# projector.visualize_embeddings(summary_writer, config)
-
-# # # save the model
-# # saver = tf.train.Saver()
-# # saver.save(sess, os.path.join('log', "model.ckpt"))  
-
-# os.system('tensorboard --logdir=log')
-
-if __name__ == '__main__':
-    word2vec2tensor(sys.argv[1], 'model', binary=False)    
+    os.system('tensorboard --logdir=log')

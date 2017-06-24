@@ -1,0 +1,5 @@
+/dataset
+gigaword_train.tar.bz2
+gigaword_train.tar.gz
+gigaword_val.tar.gz
+/vocab
