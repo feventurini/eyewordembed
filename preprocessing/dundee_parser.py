@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, '../utilities')
 import timing
 import util
+import os
 
 
 def float_or_blank_cast(s):
@@ -53,14 +54,68 @@ class DundeeTreebankParser():
 			for i in range(len(wantedSet)):
 				result.append([])
 
-			for row in r:
-				if self.previous == row[self.map['WNUM']]:
-					continue
-				self.previous = row[self.map['WNUM']]
-				#print(row)
+			def add_to_res(row):
 				temp = dtp.parserow(row)
 				for i in range(len(temp)):
 					result[i].append(temp[i])
+
+			index_tot_fix_dur = [i for i,j in enumerate(sorted(self.wantedSet)) if j==self.map['Tot_fix_dur']][0]
+			count_zero = 0
+
+			for row in r:
+				try:
+					tot_fix_dur = float(row[self.map['Tot_fix_dur']])
+				except:
+					tot_fix_dur = 0.0
+				# Remove cases of trackloss, i.e., sequences of four adjacent words
+				# that are not fixated.
+				if tot_fix_dur != 0:
+					if count_zero >=4:
+						for i in range(1, count_zero + 1):
+							if result[index_tot_fix_dur][-i] == 0:
+								for l in result:
+									del l[-i]
+					count_zero = 0
+				else:
+					count_zero += 1
+
+				# Remove cases where the reading time in Dundee has been calculated
+				# erroneously (this has to do with line lengths during presentation).
+				# These are cases of reading times > 2000.
+				if tot_fix_dur > 2000:
+					continue
+				
+				# Remove words with punctuation, i.e., only keep words were WLEN =
+				# OLEN. This is because reading times at sentence and phrase boundaries
+				# behave differently.
+				if row[self.map['OLEN']] != row[self.map['WLEN']]:
+					continue
+
+				# Remove numbers, i.e., words with PoS tag NUM. These are unreliable,
+				# according to Demberg. An more stringent approach is to remove all
+				# words whose strings include digits, special symbols (dollar sign etc),
+				# or several upper case letters.
+				if row[self.map['UniversalPOS']] == 'NUM':
+					continue
+
+				# Remove cases with large launch distance values, i.e., LDIST > 20 or
+				# LDIST < -30. These indicate beginning or ends of lines, where wrap-up
+				# can inflate reading times.
+				try:
+					ldist = float(row[self.map['LAUN']])
+					if ldist > 20 or ldist < -30:
+						continue
+				except:
+					pass
+				# Remove cases with missing n-1 or n+1 BNC or Dundee frequencies
+				# (first or last word of a text, maybe some other cases).	
+				n_plus1 = row[self.map['n+1_Dun_freq']]
+				n_minus1 = row[self.map['n-1_Dun_freq']]
+				if n_plus1 == '' or n_minus1 == '':
+					continue	
+
+				add_to_res(row)
+
 
 			rev_mapping = {v:k for k,v in self.map.items()}
 			return {rev_mapping[j]:result[i] for i,j in enumerate(sorted(self.wantedSet))}
@@ -86,9 +141,15 @@ wantedSet = ['First_pass_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'WLEN', 'WORD', 'W
 wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'WNUM':float, 'UniversalPOS':str}
 
 csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok.csv'
-dtp = DundeeTreebankParser()
-#result = dtp.parseFile(csv_path, wantedSet, wantedParsing)
+save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed/'
 
-#for k,v in result.items():
-#	util.save(v, '/media/fede/fedeProSD/eyewordembed/models/eyetracking/dundee_parsed/' + k)
-dtp.fileToText(csv_path, 'dundee.txt')
+if not os.path.isdir(save_dir):
+	os.makedirs(save_dir)
+
+dtp = DundeeTreebankParser()
+result = dtp.parseFile(csv_path, wantedSet, wantedParsing)
+
+
+for k,v in result.items():
+	util.save(v, os.path.join(save_dir,k))
+dtp.fileToText(csv_path, os.path.join(save_dir,'dundee.txt'))

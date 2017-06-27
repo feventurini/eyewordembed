@@ -23,6 +23,7 @@ sys.path.insert(0, '/media/fede/fedeProSD/eyewordembed/utilities')
 import timing
 import util
 import prepare_dataset as pd
+import os
 
 class EyeTrackingWindowIterator(chainer.dataset.Iterator):
 
@@ -249,11 +250,11 @@ if __name__ == '__main__':
     trainer.run()
 
     name = 'eyetracking_' + str(args.unit) + '_' + args.out_type
-    with open(name + '.model', 'w') as f:
+    with open(os.path.join(args.out, name + '.model', 'w')) as f:
         f.write('%d %d\n' % (len(index2word), args.unit))
         w = cuda.to_cpu(model.embed.W.data)
         for i, wi in enumerate(w):
             v = ' '.join(map(str, wi))
             f.write('%s %s\n' % (index2word[i], v))
 
-    util.save(cuda.to_cpu(model.embed.W.data), name + '_w')
+    util.save(cuda.to_cpu(model.embed.W.data), os.path.join(args.out, name + '_w'))

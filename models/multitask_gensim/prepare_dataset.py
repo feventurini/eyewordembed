@@ -6,11 +6,13 @@ sys.path.insert(0, '/media/fede/fedeProSD/eyewordembed/utilities')
 import timing
 import util
 
+import os
 
-words_path = './dundee_parsed/WORD'
-data_path = './dundee_parsed/Tot_fix_dur'
-pos_path = './dundee_parsed/UniversalPOS'
-wlen_path = './dundee_parsed/UniversalPOS'
+dundee_folder = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed_gr'
+words_path = os.path.join(dundee_folder,'WORD')
+data_path = os.path.join(dundee_folder,'Tot_fix_dur')
+pos_path = os.path.join(dundee_folder,'UniversalPOS')
+
 
 def load_dataset(vocab):
 	ws = util.load(words_path)
