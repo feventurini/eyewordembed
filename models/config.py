@@ -30,6 +30,8 @@ sub_sampling = 0.001
 n_workers = 3
 cbow_mean = 1 # 1:mean, 0:sum
 report_delay = 3.0
+
+vocab_folder = 'init_vocab'
 # ---------------------------------------------- #
 ## SHARED PARAMETERS
 n_units = 100

@@ -79,14 +79,19 @@ if __name__ == '__main__':
     sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, 
     iter=epoch, null_word=0, trim_rule=None, sorted_vocab=1, batch_words=10000)
 
-    if os.path.isfile(out_folder + os.sep + "init_vocab.model"):
-    	model.reset_from(gensim.models.Word2Vec.load(out_folder + os.sep + "init_vocab.model"))
+    if not os.path.isdir(out_folder):
+        os.makedirs(out_folder)
+    if not os.path.isdir(vocab_folder):
+        os.makedirs(vocab_folder)
+
+    if os.path.isfile(vocab_folder + os.sep + "init_vocab.model"):
+        model.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab.model"))
     else:
-    	logging.info("Building vocab...")
-    	model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
-    	logging.info("Vocabulary built")
-    	logging.info("Saving initial model with built vocabulary...")
-    	model.save(out_folder + os.sep + "init_vocab.model")
+        logging.info("Building vocab...")
+        model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
+        logging.info("Vocabulary built")
+        logging.info("Saving initial model with built vocabulary...")
+        model.save(vocab_folder + os.sep + "init_vocab.model")
 
     word2vec_iter = BatchIterator(sentences, epoch, model.corpus_count, batchsize_word2vec)
 

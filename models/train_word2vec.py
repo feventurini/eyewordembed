@@ -11,10 +11,10 @@ import logging
 import os
 
 import sys
-sys.path.insert(0, '../../utilities')
+sys.path.insert(0, '../utilities')
 import timing
 
-train_tarball = '../../gigaword_train.tar.bz2'
+train_tarball = '../gigaword_train.tar.bz2'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--unit', '-u', default=100, type=int,
@@ -36,6 +36,8 @@ parser.add_argument('--out-type', '-o', choices=['hsm', 'ns', 'original'],
                     '"ns": negative sampling, "original": no approximation)')
 parser.add_argument('--out', default='result',
                     help='Directory to output the result')
+parser.add_argument('--vocab', '-v', default='init_vocab', 
+                    help='Directory to save/load the initial vocabulary')
 parser.add_argument('--test', dest='test', action='store_true')
 parser.set_defaults(test=False)
 
@@ -50,21 +52,21 @@ print('Output type: {}'.format(args.out_type))
 print('')
 
 if args.out_type == 'hsm':
-	hs = 1
-	negative = 0
+    hs = 1
+    negative = 0
 elif args.out_type == 'ns':
-	hs = 0
-	negative = 5
+    hs = 0
+    negative = 5
 elif args.out_type == 'original':
-	hs = 0
-	negative = 0
+    hs = 0
+    negative = 0
 else:
     raise Exception('Unknown output type: {}'.format(args.out_type))
 
 if args.model == 'skipgram':
-	sg = 1
+    sg = 1
 elif args.model == 'cbow':
-	sg = 0
+    sg = 0
 else:
     raise Exception('Unknown model type: {}'.format(args.model))
 
@@ -84,16 +86,18 @@ sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, 
 iter=args.epoch, null_word=0, trim_rule=None, sorted_vocab=1, batch_words=args.batchsize)
 
 if not os.path.isdir(args.out):
-	os.makedirs(args.out)
+    os.makedirs(args.out)
 
-if os.path.isfile(args.out + os.sep + "init_vocab.model"):
-	model.reset_from(gensim.models.Word2Vec.load(args.out + os.sep + "init_vocab.model"))
+if os.path.isfile(args.vocab + os.sep + "init_vocab.model"):
+    model.reset_from(gensim.models.Word2Vec.load(args.vocab + os.sep + "init_vocab.model"))
 else:
-	logging.info("Building vocab...")
-	model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
-	logging.info("Vocabulary built")
-	logging.info("Saving initial model with built vocabulary...")
-	model.save(args.out + os.sep + "init_vocab.model")
+    logging.info("Building vocab...")
+    model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
+    logging.info("Vocabulary built")
+    logging.info("Saving initial model with built vocabulary...")
+    if not os.path.isdir(args.vocab):
+        os.makedirs(args.vocab)
+    model.save(args.vocab + os.sep + "init_vocab.model")
 
 logging.info("Starting training...")
 report_delay = 3.0
