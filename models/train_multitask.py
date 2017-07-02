@@ -61,15 +61,15 @@ class Word2VecExtension(E.Extension):
         if batch_sentences == None:
             return
 
-        # print("BEFORE:")
-        # print(self.model_word2vec.wv.syn0)
-        # input(self.model_eyetracking.embed.W.data)
+        print("BEFORE:")
+        print(self.model_word2vec.wv.syn0)
+        input(self.model_eyetracking.embed.W.data)
 
         self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2)
 
-        # print("AFTER:")
-        # print(self.model_word2vec.wv.syn0)
-        # input(self.model_eyetracking.embed.W.data)
+        print("AFTER:")
+        print(self.model_word2vec.wv.syn0)
+        input(self.model_eyetracking.embed.W.data)
 
 if __name__ == '__main__':
     

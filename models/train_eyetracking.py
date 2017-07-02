@@ -17,6 +17,8 @@ import chainer.optimizers as O
 from chainer import reporter
 from chainer import training
 from chainer.training import extensions
+import chainer.serializers as S
+
 
 import sys
 sys.path.insert(0, '/media/fede/fedeProSD/eyewordembed/utilities')
@@ -27,6 +29,52 @@ import os
 
 from eyetracking import *
 from eyetracking_batch_iter import *
+
+def inference(model_path, model_type='linreg', out_type='id', n_units=100, wlen=False, pos=False, n_pos_units=50):
+    vocab, pos2id, train, val, mean, std = pd.load_dataset()
+    n_vocab = len(vocab)
+    n_pos = len(pos2id)
+    loss_func = F.mean_squared_error
+
+    if out_type == 'tanh':
+        out = F.tanh
+    elif out_type == 'relu':
+        out = F.relu
+    elif out_type == 'sigmoid':
+        out = F.sigmoid
+    elif out_type == 'id':
+        out = F.identity
+    else:
+        raise Exception('Unknown output type: {}'.format(out_type))
+
+
+    if model_type == 'linreg':
+        model = LinReg(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
+    elif model_type == 'multilayer':
+        model = Multilayer(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_layers=1, n_hidden=50, n_pos=n_pos, n_pos_units=50)
+    elif model_type == 'context':
+        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
+    elif model_type == 'multilayer_context':
+        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
+    elif model_type == 'baseline':
+        model = Baseline(0.0, loss_func)
+    else:
+        raise Exception('Unknown model type: {}'.format(model_type))
+
+    S.load_npz(model_path, model)
+    i = input('Insert word to test (CTRL-D to end):\t')
+    while i:
+        if i not in vocab:
+            i = input('Insert word to test (CTRL-D to end):\t')
+            continue
+
+        i = np.array(vocab[i]).astype(np.int32).reshape((1,1))
+        o = model.inference(i)*std + mean
+        print('Prediction: ' + str(o))
+        i = input('Insert word to test (CTRL-D to end):\t')
+
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -112,7 +160,7 @@ if __name__ == '__main__':
     window = args.window
 
     if args.model == 'linreg':
-        model = LinReg(n_vocab, n_units, loss_func, out, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
+        model = LinReg(n_vocab, n_units, loss_func, out, wlen=False, pos=False, n_pos=n_pos, n_pos_units=50)
         train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=True, pos=True)
         val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=True, pos=True)
     elif args.model == 'multilayer':
@@ -153,12 +201,13 @@ if __name__ == '__main__':
     trainer.extend(extensions.ProgressBar())
     trainer.run()
 
-    # name = 'eyetracking_' + str(args.unit) + '_' + args.out_type
-    # with open(os.path.join(args.out, name + '.model', 'w')) as f:
-    #     f.write('%d %d\n' % (len(index2word), args.unit))
-    #     w = cuda.to_cpu(model.embed.W.data)
-    #     for i, wi in enumerate(w):
-    #         v = ' '.join(map(str, wi))
-    #         f.write('%s %s\n' % (index2word[i], v))
+    name = 'eyetracking_' + str(args.unit) + '_' + args.out_type
+    with open(os.path.join(args.out, name + '.w'), 'w') as f:
+        f.write('%d %d\n' % (len(index2word), args.unit))
+        w = cuda.to_cpu(model.embed.W.data)
+        for i, wi in enumerate(w):
+            v = ' '.join(map(str, wi))
+            f.write('%s %s\n' % (index2word[i], v))
 
-    # util.save(cuda.to_cpu(model.embed.W.data), os.path.join(args.out, name + '_w'))
+    S.save_npz(os.path.join(args.out, name + '.model'), model)
+

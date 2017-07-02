@@ -60,7 +60,10 @@ class LinReg(chainer.Chain):
             l = F.reshape(l,(-1,1,1))
             h = F.concat((e_w, l), axis=2)
         else:
-            w = inputs
+            if inputs is tuple:
+                w = inputs[0]
+            else:
+                w = inputs
             h = self.embed(w)
 
         return h
@@ -72,6 +75,9 @@ class LinReg(chainer.Chain):
         reporter.report({'loss': loss}, self)
         return loss
 
+    def inference(self, inputs):
+        h = self._embed_input(inputs)
+        return self.out(self.lin(h))
 
 class Multilayer(LinReg):
 
@@ -122,7 +128,10 @@ class Multilayer(LinReg):
             l = F.reshape(l,(-1,1,1))
             h = F.concat((e_w, l), axis=2)
         else:
-            w = inputs
+            if inputs is tuple:
+                w = inputs[0]
+            else:
+                w = inputs
             h = self.embed(w)
 
         return h
@@ -236,13 +245,38 @@ class LinRegContextConcat(chainer.Chain):
             e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
             h = F.concat((e_w, l), axis=1)
         else:
-            w = inputs
+            if inputs is tuple:
+                w = inputs[0]
+            else:
+                w = inputs
             h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
 
         o = self.out(self.lin(h))
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
         return loss
+
+    def inference(self, inputs):
+        if self.pos and self.wlen:
+            w, l, p = inputs
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
+            h = F.concat((e_w, e_p, l), axis=1)# * (1. / w.shape[1])
+        elif self.pos:
+            w, p = inputs
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
+            h = F.concat((e_w, e_p), axis=1)
+        elif self.wlen:
+            w, l = inputs
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            h = F.concat((e_w, l), axis=1)
+        else:
+            w = inputs[0]
+            h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+
+        return self.out(self.lin(h))
+
 
 def convert(batch, device):
     x, targets = batch
