@@ -2,12 +2,12 @@ import collections
 import numpy as np
 
 import sys
-sys.path.insert(0, '/media/fede/fedeProSD/eyewordembed/utilities')
+sys.path.insert(0, '../utilities')
 import timing
 import util
 import os
 
-dundee_folder = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed_gr'
+dundee_folder = '../dataset/dundee_parsed_gr'
 words_path = os.path.join(dundee_folder,'WORD')
 data_path = os.path.join(dundee_folder,'Tot_fix_dur')
 pos_path = os.path.join(dundee_folder,'UniversalPOS')

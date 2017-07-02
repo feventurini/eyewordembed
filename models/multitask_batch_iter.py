@@ -16,7 +16,7 @@ class BatchIterator(object):
         self.index = 0
         self.current_epoch = 0
         self.total_examples = total_examples
-        self.queue = Queue(maxsize=5)
+        self.queue = Queue(maxsize=20)
         self.closed_queue = False
 
         if epochs > 1:      

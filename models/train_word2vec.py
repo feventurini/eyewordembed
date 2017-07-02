@@ -26,7 +26,7 @@ parser.add_argument('--batchsize', '-b', type=int, default=10000,
 parser.add_argument('--epoch', '-e', default=20, type=int,
                     help='number of epochs to learn')
 parser.add_argument('--model', '-m', choices=['skipgram', 'cbow'],
-                    default='skipgram',
+                    default='cbow',
                     help='model type ("skipgram", "cbow")')
 parser.add_argument('--negative-size', default=5, type=int,
                     help='number of negative samples')
@@ -74,7 +74,7 @@ alpha = 0.025
 min_count = 5
 max_vocab_size = 400000
 sub_sampling = 0.001
-n_workers = 3
+n_workers = 20
 cbow_mean = 1 # 1:mean, 0:sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)

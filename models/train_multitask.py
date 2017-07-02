@@ -29,7 +29,7 @@ from multitask_batch_iter import BatchIterator
 from config import *
 from eyetracking import *
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.CRITICAL)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.INFO)
 
 class Word2VecExtension(E.Extension):
     trigger = 1, 'iteration'
