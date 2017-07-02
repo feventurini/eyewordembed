@@ -19,7 +19,7 @@ n_pos_units = 50
 ## WORD2VEC PARAMETERS
 window = 5
 batchsize_word2vec = 100000
-model_word2vec = 'skipgram' ## must be in ['skipgram', 'cbow']
+model_word2vec = 'cbow' ## must be in ['skipgram', 'cbow']
 out_type_word2vec = 'ns' ## must be in ['ns', 'hsm', 'original'] 
 
 ## GENSIM PARAMETERS
@@ -27,7 +27,7 @@ alpha = 0.025
 min_count = 5
 max_vocab_size = 400000
 sub_sampling = 0.001
-n_workers = 3
+n_workers = 20
 cbow_mean = 1 # 1:mean, 0:sum
 report_delay = 3.0
 
