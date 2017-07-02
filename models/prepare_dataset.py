@@ -12,34 +12,47 @@ words_path = os.path.join(dundee_folder,'WORD')
 data_path = os.path.join(dundee_folder,'Tot_fix_dur')
 pos_path = os.path.join(dundee_folder,'UniversalPOS')
 
+# np.random.seed(111)
+
 def create_vocabulary(words, max_size=None):
 	counter = collections.Counter(filter(lambda x: x!='', words))
-	counter = counter.most_common(max_size)
+	counter = sorted(counter.most_common(max_size))
 	word2id = {k:i for i, (k,v) in enumerate(counter)}
-	id2word = {v:k for k,v in word2id.items()}
-	return word2id, id2word, counter
+	return word2id, counter
 
-def load_dataset():
-	ws = util.load(words_path)
-	word2id, id2word, counts = create_vocabulary(ws)
+def load_dataset(word2id=None, gensim=False):
+	words = util.load(words_path)
+	if not word2id:
+		word2id, _ = create_vocabulary(words)
 
-	words, ts = [], []
-	for w,t in zip(ws, util.load(data_path)):
-		if w=='':
-			continue
-		words.append(w)
-		ts.append(t)
+	lens = [len(w) for w in words]
+
+	pos = util.load(pos_path)
+	pos2id, _= create_vocabulary(pos)
+
+	tot_fix_dur = util.load(data_path)
+	ws, ts, ls, ps = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos)))
 	
 	times = np.array(ts).reshape((-1,1))
-	times = (times - np.mean(times)) / np.sqrt(np.var(times))
+	mean = np.mean(times)
+	std = np.sqrt(np.var(times))
 
-	words_array = np.array([word2id[w] for w in words]).reshape((-1,1))
-	dataset = np.hstack((words_array,times))
+	times = (times - mean) / std
+
+	if not gensim:
+		words_array = np.array([word2id[w] for w in ws]).reshape((-1,1))
+	else:
+		words_array = np.array([word2id[w].index for w in ws]).reshape((-1,1))
+
+	pos_array = np.array([pos2id[p] for p in ps]).reshape((-1,1))
+	lens_array = np.array(ls).reshape((-1,1))
+
+	dataset = np.hstack((words_array,times,lens_array,pos_array))
 
 	np.random.shuffle(dataset)
-	train, val, test = np.split(dataset, [int(.8*len(dataset)), int(.9*len(dataset))])
-
-	return word2id, id2word, counts, train, val, test
+	train, val = np.split(dataset, [int(.9*len(dataset))])
+	
+	return word2id, pos2id, train, val, mean, std
 
 def create_reference_table():
 	words = util.load(words_path)

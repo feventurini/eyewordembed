@@ -26,7 +26,7 @@ parser.add_argument('--batchsize', '-b', type=int, default=10000,
 parser.add_argument('--epoch', '-e', default=20, type=int,
                     help='number of epochs to learn')
 parser.add_argument('--model', '-m', choices=['skipgram', 'cbow'],
-                    default='cbow',
+                    default='skipgram',
                     help='model type ("skipgram", "cbow")')
 parser.add_argument('--negative-size', default=5, type=int,
                     help='number of negative samples')

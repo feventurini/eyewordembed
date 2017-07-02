@@ -28,7 +28,6 @@ def similarity_accuracy(model, similarity_file):
     print('Pearson correlation coefficient: {:.2f}'.format(acc[0][0]))
     print('Spearman rank correlation coefficient: {:.2f}'.format(acc[1][0]))
 
-
 def bats_analogy(model, bats_folder, output_folder):
     if not os.path.isdir('vsmlib'):
         logging.error('Can''t find vsmlib folder for BATS analogy evaluation')
@@ -74,7 +73,7 @@ if __name__ == '__main__':
     else:
         model = gensim.models.KeyedVectors.load_word2vec_format(args.input, binary=args.binary)
 
-    # analogy_accuracy(model, analogy_questions_file_google)
-    # similarity_accuracy(model, ws_353_dataset)
-    # similarity_accuracy(model, simlex_999_dataset)
-    bats_analogy(model, bats_folder, args.output)
+    analogy_accuracy(model, analogy_questions_file_google)
+    similarity_accuracy(model, ws_353_dataset)
+    similarity_accuracy(model, simlex_999_dataset)
+    # bats_analogy(model, bats_folder, args.output)
