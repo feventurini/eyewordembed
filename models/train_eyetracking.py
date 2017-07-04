@@ -201,13 +201,13 @@ if __name__ == '__main__':
     trainer.extend(extensions.ProgressBar())
     trainer.run()
 
-    name = 'eyetracking_' + str(args.unit) + '_' + args.out_type
-    with open(os.path.join(args.out, name + '.w'), 'w') as f:
-        f.write('%d %d\n' % (len(index2word), args.unit))
-        w = cuda.to_cpu(model.embed.W.data)
-        for i, wi in enumerate(w):
-            v = ' '.join(map(str, wi))
-            f.write('%s %s\n' % (index2word[i], v))
+    # name = 'eyetracking_' + str(args.unit) + '_' + args.out_type
+    # with open(os.path.join(args.out, name + '.w'), 'w') as f:
+    #     f.write('%d %d\n' % (len(index2word), args.unit))
+    #     w = cuda.to_cpu(model.embed.W.data)
+    #     for i, wi in enumerate(w):
+    #         v = ' '.join(map(str, wi))
+    #         f.write('%s %s\n' % (index2word[i], v))
 
-    S.save_npz(os.path.join(args.out, name + '.model'), model)
+    # S.save_npz(os.path.join(args.out, name + '.model'), model)
 

@@ -36,40 +36,39 @@ class Word2VecExtension(E.Extension):
     default_name = 'word2vec_extension'
     priority = E.PRIORITY_WRITER
 
-    def __init__(self, sentences_iterator, model_eyetracking, model_word2vec):
+    def __init__(self, sentences_iterator, model_eyetracking, model_word2vec, start_alpha=0.025, end_alpha=0.0001):
         self.sentences_iterator = sentences_iterator
         self.model_eyetracking = model_eyetracking
         self.model_word2vec = model_word2vec
-        self.alpha = alpha
-        self.progress = batchsize_word2vec / model_word2vec.corpus_count
-        self.min_alpha = self.alpha - self.progress*self.alpha
-        self.speed = 0
-        
+        self.start_alpha = start_alpha
+        self.next_alpha = start_alpha
+        self.end_alpha = end_alpha
+
     def initialize(self, trainer):
         self.model_eyetracking.embed.W.data = self.model_word2vec.wv.syn0
 
-    def __updateLR(self):
-        self.alpha = self.min_alpha 
-        self.min_alpha = self.alpha - self.progress*self.alpha
-      
+    def __updateLR(self, batch_size):
+        progress = batch_size / float(model_word2vec.total_examples * sentences_iterator.epochs)
+        self.alpha = self.next_alpha    
+        self.next_alpha = max(self.end_alpha, self.alpha - progress * self.alpha)
+
     def __call__(self, trainer):
-        self.model_word2vec.alpha = self.alpha
-        self.model_word2vec.min_alpha = self.min_alpha
-        self.__updateLR()
 
         batch_sentences = self.sentences_iterator.next()
         if batch_sentences == None:
             return
 
-        print("BEFORE:")
-        print(self.model_word2vec.wv.syn0)
-        input(self.model_eyetracking.embed.W.data)
+        self.__updateLR(len(batch_sentences))
 
-        self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2)
+        # print("BEFORE:")
+        # print(self.model_word2vec.wv.syn0)
+        # input(self.model_eyetracking.embed.W.data)
 
-        print("AFTER:")
-        print(self.model_word2vec.wv.syn0)
-        input(self.model_eyetracking.embed.W.data)
+        self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=self.alpha, end_alpha=self.next_alpha)
+
+        # print("AFTER:")
+        # print(self.model_word2vec.wv.syn0)
+        # input(self.model_eyetracking.embed.W.data)
 
 if __name__ == '__main__':
     

@@ -60,7 +60,7 @@ class LinReg(chainer.Chain):
             l = F.reshape(l,(-1,1,1))
             h = F.concat((e_w, l), axis=2)
         else:
-            if inputs is tuple:
+            if isinstance(inputs, tuple):
                 w = inputs[0]
             else:
                 w = inputs

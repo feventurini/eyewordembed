@@ -35,6 +35,6 @@ class SentenceTokenizer():
 
 #pool = Pool(4)
 #pool.map(tokenize_op, os.listdir(src_folder))
-src_folder = '.'
+src_folder = '/home/fede/Desktop'
 dest_folder = '.'
-tokenize_op('dundee.txt')
+tokenize_op('text8')
