@@ -16,8 +16,8 @@ import timing
 from multitask_batch_iter import BatchIterator
 import datetime
 
-# train_tarball = '../gigaword_train.tar.bz2'
-train_tarball = '../gigaword_train.tar.bz2'
+#train_tarball = '../gigaword_train.tar.bz2'
+train_tarball = 'brown_corpus'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--unit', '-u', default=100, type=int,
@@ -82,7 +82,9 @@ cbow_mean = 1 # 1:mean, 0:sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-sentences = gensim.models.word2vec.LineSentence(train_tarball)
+# sentences = gensim.models.word2vec.LineSentence(train_tarball)
+from nltk.corpus import brown
+sentences = brown.sents()
 
 model = gensim.models.word2vec.Word2Vec(sentences=None, size=args.unit, alpha=alpha, window=args.window, min_count=min_count, max_vocab_size=max_vocab_size, iter=args.epoch,
 sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, null_word=0, trim_rule=None, sorted_vocab=1)
@@ -104,34 +106,35 @@ else:
 logging.info("Starting training...")
 report_delay = 3.0
 
-# word2vec_iter = BatchIterator(sentences, args.epoch, model.corpus_count, batch_size=args.batchsize, maxsize=5)
+word2vec_iter = BatchIterator(sentences, args.epoch, model.corpus_count, batch_size=args.batchsize, maxsize=5)
 
-# start_alpha = 0.025
-# end_alpha = 0.0001
-# n_examples = 0 
-# total_examples = model.corpus_count * args.epoch
+start_alpha = 0.025
+end_alpha = 0.0001
+n_examples = 0 
+print(model.corpus_count)
+total_examples = model.corpus_count * args.epoch
 
-# batch_sentences = word2vec_iter.next()
+batch_sentences = word2vec_iter.next()
 
-# n_examples += len(batch_sentences)
-# progress = 1.0 * n_examples / total_examples
-# alpha = start_alpha
-# next_alpha = start_alpha - (start_alpha - end_alpha) * progress
-# next_alpha = max(end_alpha, next_alpha)
+n_examples += len(batch_sentences)
+progress = 1.0 * n_examples / total_examples
+alpha = start_alpha
+next_alpha = start_alpha - (start_alpha - end_alpha) * progress
+next_alpha = max(end_alpha, next_alpha)
 
-# while batch_sentences:
-#     print(alpha, next_alpha)
-#     model.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=alpha, end_alpha=next_alpha)
+while batch_sentences:
+    print(alpha, next_alpha)
+    model.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=alpha, end_alpha=next_alpha)
 
-#     batch_sentences = word2vec_iter.next()
-#     if batch_sentences:
-#         n_examples += len(batch_sentences)
-#         progress = 1.0 * n_examples / total_examples
-#         alpha = next_alpha
-#         next_alpha = start_alpha - (start_alpha - end_alpha) * progress
-#         next_alpha = max(end_alpha, next_alpha)
+    batch_sentences = word2vec_iter.next()
+    if batch_sentences:
+        n_examples += len(batch_sentences)
+        progress = 1.0 * n_examples / total_examples
+        alpha = next_alpha
+        next_alpha = start_alpha - (start_alpha - end_alpha) * progress
+        next_alpha = max(end_alpha, next_alpha)
 
-model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
+# model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
 
 model.save(args.out + os.sep + "word2vec_gigaword_" + str(args.unit) + "_" + args.model + "_" + args.out_type + '_' + 
         str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + ".model")

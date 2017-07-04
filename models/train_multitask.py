@@ -43,14 +43,18 @@ class Word2VecExtension(E.Extension):
         self.start_alpha = start_alpha
         self.next_alpha = start_alpha
         self.end_alpha = end_alpha
+        self.n_examples = 0
+        self.total_examples = model_word2vec.corpus_count
 
     def initialize(self, trainer):
         self.model_eyetracking.embed.W.data = self.model_word2vec.wv.syn0
 
     def __updateLR(self, batch_size):
-        progress = batch_size / float(model_word2vec.total_examples * sentences_iterator.epochs)
+        self.n_examples += batch_size
+        progress = 1.0 * self.n_examples / self.total_examples
         self.alpha = self.next_alpha    
-        self.next_alpha = max(self.end_alpha, self.alpha - progress * self.alpha)
+        next_alpha = self.start_alpha - (self.start_alpha - self.end_alpha) * progress
+        self.next_alpha = max(self.end_alpha, next_alpha)
 
     def __call__(self, trainer):
 
@@ -64,6 +68,7 @@ class Word2VecExtension(E.Extension):
         # print(self.model_word2vec.wv.syn0)
         # input(self.model_eyetracking.embed.W.data)
 
+        print(self.alpha, self.next_alpha)        
         self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=self.alpha, end_alpha=self.next_alpha)
 
         # print("AFTER:")

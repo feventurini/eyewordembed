@@ -11,7 +11,7 @@ class Baseline(chainer.Chain):
         self.loss_func = loss_func
         self.mean = mean
 
-    def __call__(self, w, target):
+    def __call__(self, inputs, target):
         loss = self.loss_func(np.full(target.shape, self.mean, dtype=np.float32), target)
         reporter.report({'loss': loss}, self)
         return loss        
@@ -30,15 +30,16 @@ class LinReg(chainer.Chain):
             if self.pos and self.wlen:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear(n_units + n_pos_units + 1, 1, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units + n_pos_units + 1 
             elif self.wlen:
-                self.lin = L.Linear(n_units + 1, 1, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units + 1
             elif self.pos:
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear(n_units + n_pos_units, 1, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units + n_pos_units
             else:
-                self.lin = L.Linear(n_units, 1, initialW=I.Uniform(1. / n_units))
-            
+                n_inputs = n_units
+
+            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))            
             self.out = out
             self.loss_func = loss_func
 
@@ -93,14 +94,16 @@ class Multilayer(LinReg):
             if self.pos and self.wlen:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear(n_units + n_pos_units + 1, n_hidden, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units + n_pos_units + 1 
             elif self.wlen:
-                self.lin = L.Linear(n_units + 1, n_hidden, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units + 1
             elif self.pos:
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear(n_units + n_pos_units, n_hidden, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units + n_pos_units
             else:
-                self.lin = L.Linear(n_units, n_hidden, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units
+
+            self.lin = L.Linear(n_inputs, n_hidden, initialW=I.Uniform(1. / n_inputs))
             
             self.layers = list()
             for i in range(n_layers - 1):
@@ -110,35 +113,9 @@ class Multilayer(LinReg):
             self.out = out
             self.loss_func = loss_func
 
-    def _embed_input(self, inputs):
-        if self.pos and self.wlen:
-            w, l, p = inputs
-            e_w = self.embed(w)
-            e_p = self.embed_pos(p)
-            l = F.reshape(l,(-1,1,1))
-            h = F.concat((e_w, e_p, l), axis=2)
-        elif self.pos:
-            w, p = inputs
-            e_w = self.embed(w)
-            e_p = self.embed_pos(p)
-            h = F.concat((e_w, e_p), axis=2)
-        elif self.wlen:
-            w, l = inputs
-            e_w = self.embed(w)
-            l = F.reshape(l,(-1,1,1))
-            h = F.concat((e_w, l), axis=2)
-        else:
-            if inputs is tuple:
-                w = inputs[0]
-            else:
-                w = inputs
-            h = self.embed(w)
-
-        return h
-
     def __call__(self, inputs, target):
 
-        i = (self._embed_input(inputs))
+        i = (self._embed_input(inputs)) # called from superclass
         h = self.out(self.lin(i))
         for l in self.layers:
             h = self.out(l(h))
@@ -146,6 +123,14 @@ class Multilayer(LinReg):
         loss = self.loss_func(h, target)
         reporter.report({'loss': loss}, self)
         return loss
+
+    def inference(self, inputs):
+
+        i = (self._embed_input(inputs)) # called from superclass
+        h = self.out(self.lin(i))
+        for l in self.layers:
+            h = self.out(l(h))
+        return h
 
 class LinRegContextSum(chainer.Chain):
 
@@ -160,21 +145,24 @@ class LinRegContextSum(chainer.Chain):
 
             if self.pos and self.wlen:
                 assert(n_pos)
+                n_inputs = n_units + n_pos_units + 1
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear(n_units + n_pos_units + 1, 1, initialW=I.Uniform(1. / n_units))
-            elif self.wlen:
-                self.lin = L.Linear(n_units + 1, 1, initialW=I.Uniform(1. / n_units))
-            elif self.pos:
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear(n_units + n_pos_units, 1, initialW=I.Uniform(1. / n_units))
-            else:
-                self.lin = L.Linear(n_units, 1, initialW=I.Uniform(1. / n_units))
 
+            elif self.wlen:
+                n_inputs = n_units + 1
+            
+            elif self.pos:
+                n_inputs = n_units + n_pos_units
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+            
+            else:
+                n_inputs = n_units
+
+            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
             self.out = out
             self.loss_func = loss_func
 
-    def __call__(self, inputs, target):
-
+    def _embed_input(self, inputs):
         if self.pos and self.wlen:
             w, l, p = inputs
             e_w = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
@@ -192,13 +180,24 @@ class LinRegContextSum(chainer.Chain):
             l = F.mean(l, axis=1).reshape(-1,1) #F.reshape(l,(-1,w.shape[1]))
             h = F.concat((e_w, l), axis=1)
         else:
-            w = inputs
+            if isinstance(inputs, tuple):
+                w = inputs[0]
+            else:
+                w = inputs
             h = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
 
+        return h
+
+    def __call__(self, inputs, target):
+        h = self._embed_input(inputs)
         o = self.out(self.lin(h))
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
         return loss
+
+    def inference(self, inputs):
+        h = self._embed_input(inputs)
+        return self.out(self.lin(h))
 
 class LinRegContextConcat(chainer.Chain):
 
@@ -215,21 +214,24 @@ class LinRegContextConcat(chainer.Chain):
 
             if self.pos and self.wlen:
                 assert(n_pos)
+                n_inputs = (n_units + n_pos_units + 1) * window
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear((n_units + n_pos_units + 1)*window, 1, initialW=I.Uniform(1. / n_units))
+            
             elif self.wlen:
-                self.lin = L.Linear((n_units + 1)*window, 1, initialW=I.Uniform(1. / n_units))
+                n_inputs = (n_units + 1) * window
+            
             elif self.pos:
+                n_inputs = (n_units + n_pos_units) * window
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                self.lin = L.Linear((n_units + n_pos_units)*window, 1, initialW=I.Uniform(1. / n_units))
+            
             else:
-                self.lin = L.Linear((n_units)*window, 1, initialW=I.Uniform(1. / n_units))
+                n_inputs = n_units * window
 
+            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
             self.out = out
             self.loss_func = loss_func
 
-    def __call__(self, inputs, target):
-
+    def _embed_input(self, inputs):
         if self.pos and self.wlen:
             w, l, p = inputs
             e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
@@ -245,36 +247,21 @@ class LinRegContextConcat(chainer.Chain):
             e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
             h = F.concat((e_w, l), axis=1)
         else:
-            if inputs is tuple:
+            if isinstance(inputs, tuple):
                 w = inputs[0]
             else:
                 w = inputs
             h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
 
+    def __call__(self, inputs, target):
+        h = self._embed_input(inputs)
         o = self.out(self.lin(h))
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
         return loss
 
     def inference(self, inputs):
-        if self.pos and self.wlen:
-            w, l, p = inputs
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
-            h = F.concat((e_w, e_p, l), axis=1)# * (1. / w.shape[1])
-        elif self.pos:
-            w, p = inputs
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
-            h = F.concat((e_w, e_p), axis=1)
-        elif self.wlen:
-            w, l = inputs
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            h = F.concat((e_w, l), axis=1)
-        else:
-            w = inputs[0]
-            h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-
+        h = self._embed_input(inputs)
         return self.out(self.lin(h))
 
 
