@@ -16,8 +16,7 @@ import timing
 from multitask_batch_iter import BatchIterator
 import datetime
 
-#train_tarball = '../gigaword_train.tar.bz2'
-train_tarball = 'brown_corpus'
+train_tarball = '../gigaword_train.tar.bz2'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--unit', '-u', default=100, type=int,
@@ -82,9 +81,7 @@ cbow_mean = 1 # 1:mean, 0:sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-# sentences = gensim.models.word2vec.LineSentence(train_tarball)
-from nltk.corpus import brown
-sentences = brown.sents()
+sentences = gensim.models.word2vec.LineSentence(train_tarball)
 
 model = gensim.models.word2vec.Word2Vec(sentences=None, size=args.unit, alpha=alpha, window=args.window, min_count=min_count, max_vocab_size=max_vocab_size, iter=args.epoch,
 sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, null_word=0, trim_rule=None, sorted_vocab=1)
@@ -111,7 +108,6 @@ word2vec_iter = BatchIterator(sentences, args.epoch, model.corpus_count, batch_s
 start_alpha = 0.025
 end_alpha = 0.0001
 n_examples = 0 
-print(model.corpus_count)
 total_examples = model.corpus_count * args.epoch
 
 batch_sentences = word2vec_iter.next()
