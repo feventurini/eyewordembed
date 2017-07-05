@@ -1,0 +1,38 @@
+LINREG tanh_lenTrue_posTrue_posUnits50/100
+0.7662004113
+0.6730132161
+
+nice
+--------------------------------------------------------
+LINREG id_lenTrue_posTrue_posUnits50/100
+0.7700686336
+0.5398531912
+
+possibly nicer, better capacity, can be improved
+--------------------------------------------------------
+MULTILAYER tanh_lenTrue_posTrue_posUnits50/100_layers1_hiddenunits200
+0.7746142626
+0.7082717709
+
+doesn't work as much with less hidden units, 200 is a good number apparently
+--------------------------------------------------------
+CONTEXT_CONCAT tanh_lenTrue_posTrue_posUnits100
+0.8375149012
+0.5877760266
+
+needs regularization, but has potential
+--------------------------------------------------------
+MULTILAYER_CONTEXT tanh_lenTrue_posTrue_posUnits50_layers1_hiddenunits200
+0.8434546709
+0.6255008458
+
+probably not worth it, but can work on it
+--------------------------------------------------------
+CONTEXT_SUM is by far the worst, probably too much noise in the same place and difficult to
+learn
+
+
+--------------------------------------------------------
+sigmoid and relu generally behave substantially worse, depending on the model.
+In general, with the naive configuration linreg > multilayer > context_concat ~ multilayer_context >> context_sum
+in the multilayer case 1 layer is enough, with more than 1 is difficult to learn

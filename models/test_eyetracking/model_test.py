@@ -38,59 +38,27 @@ if __name__ == '__main__':
     gpu = -1
     unit = 100
     batchsize = 1000
-    epoch = 20
-    model_type = 'linreg'
+    epoch = 50
     window = 1
-    out_type = 'id'
     reg_coeff = 0.001
-    out_path = 'test_eyetracking/result'
-    test = False
+    out_path = 'test_eyetracking/result/initial_exploration'
 
     if gpu >= 0:
         chainer.cuda.get_device_from_id(gpu).use()
         cuda.check_cuda_available()
 
-    print('GPU: {}'.format(gpu))
-    print('# unit: {}'.format(unit))
-    #print('Minibatch-size: {}'.format(batchsize))
-    print('# epoch: {}'.format(epoch))
-    print('Output type: {}'.format(out_type))
-
-    if gpu >= 0:
-        cuda.get_device_from_id(gpu).use()
-
     vocab, pos2id, train, val, mean, std = pd.load_dataset()
     index2word = {v:k for k,v in vocab.items()}
 
-
-    print('')
-    print('Mean dataset times: {}'.format(mean))
-    print('Std_dev dataset times: {}'.format(std))
-
-    # temp = [b[1] for b in train]
-    # print('Mean train times: {}'.format(np.mean(temp)))
-    # print('Std_dev train times: {}'.format(np.sqrt(np.var(temp))))
-    # temp = [b[1] for b in val]
-    # print('Mean validation times: {}'.format(np.mean(temp)))
-    # print('Std_dev validation times: {}'.format(np.sqrt(np.var(temp))))    
-
-    if test:
-        train = train[:100]
-        val = val[:100]
-
     n_vocab = len(vocab)
     n_pos = len(pos2id)
-    print('n_vocab: %d' % n_vocab)
-    print('data length: %d' % len(train))
-    print('n_pos: %d' % n_pos)
 
     loss_func = F.mean_squared_error
 
     batch_size = batchsize
     n_units = unit
 
-    # model_types = ['linreg', 'context_sum', 'context_concat']
-    model_types = ['context_concat', 'context_sum']
+    model_types = ['linreg', 'context_sum', 'context_concat']
     wlens = [True, False]
     poss = [True, True, True, False]
     n_pos_unitss = [50, 100, 200, None]
