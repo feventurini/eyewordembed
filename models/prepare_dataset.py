@@ -12,7 +12,7 @@ words_path = os.path.join(dundee_folder,'WORD')
 data_path = os.path.join(dundee_folder,'Tot_fix_dur')
 pos_path = os.path.join(dundee_folder,'UniversalPOS')
 
-# np.random.seed(111)
+np.random.seed(111)
 
 def create_vocabulary(words, max_size=None):
 	counter = collections.Counter(filter(lambda x: x!='', words))

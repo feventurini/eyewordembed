@@ -27,7 +27,7 @@ alpha = 0.025
 min_count = 5
 max_vocab_size = 400000
 sub_sampling = 0.001
-n_workers = 20
+n_workers = 10
 cbow_mean = 1 # 1:mean, 0:sum
 report_delay = 3.0
 

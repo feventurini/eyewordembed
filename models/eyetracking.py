@@ -114,7 +114,6 @@ class Multilayer(LinReg):
             self.loss_func = loss_func
 
     def __call__(self, inputs, target):
-
         i = (self._embed_input(inputs)) # called from superclass
         h = self.out(self.lin(i))
         for l in self.layers:
@@ -134,7 +133,7 @@ class Multilayer(LinReg):
 
 class LinRegContextSum(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=2, wlen=False, pos=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, n_pos=None, n_pos_units=50):
         super(LinRegContextSum, self).__init__()
 
         self.pos = pos
@@ -201,7 +200,7 @@ class LinRegContextSum(chainer.Chain):
 
 class LinRegContextConcat(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=2, wlen=False, pos=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, n_pos=None, n_pos_units=50):
         super(LinRegContextConcat, self).__init__()
 
         self.n_units = n_units
@@ -214,18 +213,18 @@ class LinRegContextConcat(chainer.Chain):
 
             if self.pos and self.wlen:
                 assert(n_pos)
-                n_inputs = (n_units + n_pos_units + 1) * window
+                n_inputs = (n_units + n_pos_units + 1) * (window + 1)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
             
             elif self.wlen:
-                n_inputs = (n_units + 1) * window
+                n_inputs = (n_units + 1) * (window + 1)
             
             elif self.pos:
-                n_inputs = (n_units + n_pos_units) * window
+                n_inputs = (n_units + n_pos_units) * (window + 1)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
             
             else:
-                n_inputs = n_units * window
+                n_inputs = n_units * (window + 1)
 
             self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
             self.out = out
@@ -253,6 +252,8 @@ class LinRegContextConcat(chainer.Chain):
                 w = inputs
             h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
 
+        return h
+
     def __call__(self, inputs, target):
         h = self._embed_input(inputs)
         o = self.out(self.lin(h))
@@ -263,6 +264,61 @@ class LinRegContextConcat(chainer.Chain):
     def inference(self, inputs):
         h = self._embed_input(inputs)
         return self.out(self.lin(h))
+
+class MultilayerContext(LinRegContextConcat):
+
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, n_layers=1, n_hidden=50, wlen=False, pos=False, n_pos=None, n_pos_units=50):
+        super(LinRegContextConcat, self).__init__()
+
+        self.n_units = n_units
+        self.n_pos_units = n_pos_units
+        self.pos = pos
+        self.wlen = wlen
+
+        with self.init_scope():
+            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
+
+            if self.pos and self.wlen:
+                assert(n_pos)
+                n_inputs = (n_units + n_pos_units + 1) * (window + 1)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+            
+            elif self.wlen:
+                n_inputs = (n_units + 1) * (window + 1)
+            
+            elif self.pos:
+                n_inputs = (n_units + n_pos_units) * (window + 1)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+            
+            else:
+                n_inputs = n_units * (window + 1)
+
+            self.lin = L.Linear(n_inputs, n_hidden, initialW=I.Uniform(1. / n_inputs))
+
+            self.layers = list()
+            for i in range(n_layers - 1):
+                self.layers.append(L.Linear(n_hidden, n_hidden, initialW=I.Uniform(1. / n_units)))
+            self.layers.append(L.Linear(n_hidden, 1, initialW=I.Uniform(1. / n_units)))
+
+            self.out = out
+            self.loss_func = loss_func
+
+    def __call__(self, inputs, target):
+        i = (self._embed_input(inputs)) # called from superclass
+        h = self.out(self.lin(i))
+        for l in self.layers:
+            h = self.out(l(h))
+
+        loss = self.loss_func(h, target)
+        reporter.report({'loss': loss}, self)
+        return loss
+
+    def inference(self, inputs):
+        i = (self._embed_input(inputs)) # called from superclass
+        h = self.out(self.lin(i))
+        for l in self.layers:
+            h = self.out(l(h))
+        return h
 
 
 def convert(batch, device):

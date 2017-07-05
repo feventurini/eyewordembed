@@ -64,7 +64,7 @@ class EyeTrackingWindowIterator(chainer.dataset.Iterator):
             ps = self.pos_tags.take(pos)
             return (context, ps), times
         else:
-            return context, times
+            return (context,), times
 
     @property
     def epoch_detail(self):
@@ -101,12 +101,7 @@ class EyeTrackingSerialIterator(chainer.iterators.SerialIterator):
             ps = ps.astype(np.int32).reshape(-1,1)
             return (words, ps), times
         else:
-            return words, times
-
-        # ls = ls.astype(np.float32).reshape(-1,1)
-        # ps = ps.astype(np.int32).reshape(-1,1)
-
-        # return (words, ls, ps), times
+            return (words,), times
     
     next = __next__    
 

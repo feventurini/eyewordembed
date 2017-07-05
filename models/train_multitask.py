@@ -44,7 +44,7 @@ class Word2VecExtension(E.Extension):
         self.next_alpha = start_alpha
         self.end_alpha = end_alpha
         self.n_examples = 0
-        self.total_examples = model_word2vec.corpus_count
+        self.total_examples = model_word2vec.corpus_count * sentences_iterator.epochs
 
     def initialize(self, trainer):
         self.model_eyetracking.embed.W.data = self.model_word2vec.wv.syn0
@@ -68,7 +68,7 @@ class Word2VecExtension(E.Extension):
         # print(self.model_word2vec.wv.syn0)
         # input(self.model_eyetracking.embed.W.data)
 
-        print(self.alpha, self.next_alpha)        
+        # print(self.alpha, self.next_alpha)        
         self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=self.alpha, end_alpha=self.next_alpha)
 
         # print("AFTER:")
@@ -88,14 +88,14 @@ if __name__ == '__main__':
     if not os.path.isdir(vocab_folder):
         os.makedirs(vocab_folder)
 
-    if os.path.isfile(vocab_folder + os.sep + "init_vocab.model"):
-        model.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab.model"))
+    if os.path.isfile(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"):
+        model.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
     else:
         logging.info("Building vocab...")
         model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
         logging.info("Vocabulary built")
         logging.info("Saving initial model with built vocabulary...")
-        model.save(vocab_folder + os.sep + "init_vocab.model")
+        model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model")
 
     word2vec_iter = BatchIterator(sentences, epoch, model.corpus_count, batchsize_word2vec)
 

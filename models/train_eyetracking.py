@@ -160,7 +160,7 @@ if __name__ == '__main__':
     window = args.window
 
     if args.model == 'linreg':
-        model = LinReg(n_vocab, n_units, loss_func, out, wlen=False, pos=False, n_pos=n_pos, n_pos_units=50)
+        model = LinReg(n_vocab, n_units, loss_func, out, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
         train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=True, pos=True)
         val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=True, pos=True)
     elif args.model == 'multilayer':
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     if args.gpu >= 0:
         model.to_gpu()
 
-    optimizer = O.Adam()
+    optimizer = O.Adam(0.01)
     optimizer.setup(model)
     l2_reg = chainer.optimizer.WeightDecay(args.reg_coeff)
     optimizer.add_hook(l2_reg, 'l2')
