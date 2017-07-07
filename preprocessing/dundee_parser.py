@@ -137,11 +137,11 @@ class DundeeTreebankParser():
 
 
 
-wantedSet = ['First_pass_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'WLEN', 'WORD', 'WNUM', 'UniversalPOS']
-wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'WNUM':float, 'UniversalPOS':str}
+wantedSet = ['First_pass_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS']
+wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'WNUM':float, 'UniversalPOS':str, 'CPOS':str}
 
-csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok.csv'
-save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed/'
+csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok_gr.csv'
+save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed_gr/'
 
 if not os.path.isdir(save_dir):
 	os.makedirs(save_dir)

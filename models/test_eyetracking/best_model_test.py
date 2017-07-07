@@ -112,10 +112,10 @@ if __name__ == '__main__':
 
                         name = '{}_{}_lr{}_reg{}'.format(out_type, rule_name[r], lr, reg_coeff)
                         print('{}_{}'.format(model_type, name))
-                        optimizer = O.Adam()
+                        optimizer = r(lr)
                         optimizer.setup(model)
-                        # l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
-                        # optimizer.add_hook(l2_reg, 'l2')
+                        l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
+                        optimizer.add_hook(l2_reg, 'l2')
 
                         updater = training.StandardUpdater(train_iter, optimizer, converter=convert, device=gpu)
                         trainer = training.Trainer(updater, (epoch, 'epoch'), out=out_path + os.sep + model_type)

@@ -14,6 +14,8 @@ reg_coeff = 0.001
 lens = True
 pos = True
 n_pos_units = 50
+n_hidden = 200
+n_layers = 1
 
 # ---------------------------------------------- #
 ## WORD2VEC PARAMETERS

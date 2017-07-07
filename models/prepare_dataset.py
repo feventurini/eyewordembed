@@ -10,7 +10,7 @@ import os
 dundee_folder = '../dataset/dundee_parsed_gr'
 words_path = os.path.join(dundee_folder,'WORD')
 data_path = os.path.join(dundee_folder,'Tot_fix_dur')
-pos_path = os.path.join(dundee_folder,'UniversalPOS')
+pos_path = os.path.join(dundee_folder,'CPOS')
 
 np.random.seed(111)
 

@@ -63,7 +63,7 @@ if __name__ == '__main__':
     if not os.path.isdir(args.output):
         os.makedirs(args.output)
 
-    logging.basicConfig(filename=os.path.join(args.output,'log.log'), filemode='w', format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+    logging.basicConfig(filename=os.path.join(args.output,args.input.split(os.sep)[-1] + '.log'), filemode='w', format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 

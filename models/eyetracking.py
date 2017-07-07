@@ -46,20 +46,40 @@ class LinReg(chainer.Chain):
     def _embed_input(self, inputs):
         if self.pos and self.wlen:
             w, l, p = inputs
+            w = chainer.Variable(w, name='word')
+            p = chainer.Variable(p, name='pos_tag')
+            l = chainer.Variable(l, name='word_length')
+
             e_w = self.embed(w)
             e_p = self.embed_pos(p)
             l = F.reshape(l,(-1,1,1))
             h = F.concat((e_w, e_p, l), axis=2)
+
+            l.name = 'word_length'
+            e_p.name = 'pos_embedding'
+
         elif self.pos:
             w, p = inputs
+            w = chainer.Variable(w, name='word')
+            p = chainer.Variable(p, name='pos_tag')
+
             e_w = self.embed(w)
             e_p = self.embed_pos(p)
             h = F.concat((e_w, e_p), axis=2)
+
+            e_p.name = 'pos_embedding'
+
         elif self.wlen:
             w, l = inputs
+
+            w = chainer.Variable(w, name='word')
+            l = chainer.Variable(l, name='word_length')
+
             e_w = self.embed(w)
             l = F.reshape(l,(-1,1,1))
             h = F.concat((e_w, l), axis=2)
+
+            l.name = 'word_length'
         else:
             if isinstance(inputs, tuple):
                 w = inputs[0]
@@ -67,11 +87,15 @@ class LinReg(chainer.Chain):
                 w = inputs
             h = self.embed(w)
 
+        e_w.name = 'word_embedding'
+        h.name = 'concatenated_input'
         return h
 
     def __call__(self, inputs, target):
+        target = chainer.Variable(target, name='target')
         h = self._embed_input(inputs)
         o = self.out(self.lin(h))
+        o.name = 'output_time_prediction'
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
         return loss
@@ -114,17 +138,18 @@ class Multilayer(LinReg):
             self.loss_func = loss_func
 
     def __call__(self, inputs, target):
+        target = chainer.Variable(target, name='target')
         i = (self._embed_input(inputs)) # called from superclass
         h = self.out(self.lin(i))
         for l in self.layers:
             h = self.out(l(h))
 
+        h.name = 'output_time_prediction'
         loss = self.loss_func(h, target)
         reporter.report({'loss': loss}, self)
         return loss
 
     def inference(self, inputs):
-
         i = (self._embed_input(inputs)) # called from superclass
         h = self.out(self.lin(i))
         for l in self.layers:
@@ -164,20 +189,43 @@ class LinRegContextSum(chainer.Chain):
     def _embed_input(self, inputs):
         if self.pos and self.wlen:
             w, l, p = inputs
+
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+
             e_w = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
             e_p = F.sum(self.embed_pos(p), axis=1) * (1. / p.shape[1])
             l = F.mean(l, axis=1).reshape(-1,1) #F.reshape(l,(-1,w.shape[1]))
             h = F.concat((e_w, e_p, l), axis=1)
+
+            l.name = 'word_lengths_window'
+            e_p.name = 'pos_embeddings'
+
         elif self.pos:
             w, p = inputs
+
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+
             e_w = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
             e_p = F.sum(self.embed_pos(p), axis=1) * (1. / p.shape[1])
             h = F.concat((e_w, e_p), axis=1)
+
+            e_p.name = 'pos_embeddings'
+
         elif self.wlen:
             w, l = inputs
+
+            w = chainer.Variable(w, name='words_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+
             e_w = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
             l = F.mean(l, axis=1).reshape(-1,1) #F.reshape(l,(-1,w.shape[1]))
             h = F.concat((e_w, l), axis=1)
+
+            l.name = 'word_lengths_window'
+
         else:
             if isinstance(inputs, tuple):
                 w = inputs[0]
@@ -185,11 +233,16 @@ class LinRegContextSum(chainer.Chain):
                 w = inputs
             h = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
 
+        e_w.name = 'word_embeddings'
+        h.name = 'concatenated_input'
+
         return h
 
     def __call__(self, inputs, target):
+        target = chainer.Variable(target, name='target')
         h = self._embed_input(inputs)
         o = self.out(self.lin(h))
+        o.name = 'output_time_prediction'
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
         return loss
@@ -233,30 +286,56 @@ class LinRegContextConcat(chainer.Chain):
     def _embed_input(self, inputs):
         if self.pos and self.wlen:
             w, l, p = inputs
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+
             e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
             e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
             h = F.concat((e_w, e_p, l), axis=1)# * (1. / w.shape[1])
+
+            l.name = 'word_lengths_window'
+            e_p.name = 'pos_embeddings'
+
         elif self.pos:
             w, p = inputs
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+
             e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
             e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
             h = F.concat((e_w, e_p), axis=1)
+
+            e_p.name = 'pos_embeddings'
+
         elif self.wlen:
             w, l = inputs
+            w = chainer.Variable(w, name='words_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+
             e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
             h = F.concat((e_w, l), axis=1)
+
+            l.name = 'word_lengths_window'
+
         else:
             if isinstance(inputs, tuple):
                 w = inputs[0]
             else:
                 w = inputs
+
+            w = chainer.Variable(w, name='word')
             h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
 
+        e_w.name = 'word_embeddings'
+        h.name = 'concatenated_input'
         return h
 
     def __call__(self, inputs, target):
+        target = chainer.Variable(target, name='target')
         h = self._embed_input(inputs)
         o = self.out(self.lin(h))
+        o.name = 'output_time_prediction'
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
         return loss
