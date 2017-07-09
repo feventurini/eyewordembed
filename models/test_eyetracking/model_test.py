@@ -85,20 +85,20 @@ if __name__ == '__main__':
 
                     if model_type == 'linreg':
                         model = LinReg(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-                        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
-                        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
+                        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+                        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
                     elif model_type == 'context_concat':
                         model = LinRegContextConcat(n_vocab, n_units, loss_func, out, window=window, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-                        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
-                        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
+                        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+                        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
                     elif model_type == 'multilayer':
                         model = Multilayer(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, n_layers=n_layers, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-                        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
-                        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
+                        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+                        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
                     elif model_type == 'multilayer_context':
                         model = MultilayerContext(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, n_layers=n_layers, window=1, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-                        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
-                        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos, prev_time=prev_time)
+                        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+                        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
                     else:
                         raise Exception('Unknown model type: {}'.format(model))
 
