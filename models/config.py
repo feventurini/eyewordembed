@@ -11,8 +11,9 @@ out_type_eyetracking = 'id' ## must be in ['tanh', 'sigmoid', 'id', 'relu']
 if model_eyetracking_inference == 'context':
     window_eyetracking = 1
 reg_coeff = 0.001
-lens = True
+wlen = True
 pos = True
+prev_time = True
 n_pos_units = 50
 n_hidden = 200
 n_layers = 1
@@ -29,7 +30,7 @@ alpha = 0.025
 min_count = 5
 max_vocab_size = 400000
 sub_sampling = 0.001
-n_workers = 10
+n_workers = 3
 cbow_mean = 1 # 1:mean, 0:sum
 report_delay = 3.0
 

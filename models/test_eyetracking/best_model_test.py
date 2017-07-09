@@ -58,14 +58,14 @@ if __name__ == '__main__':
     n_units = unit
     window = window
 
-    rule_name = {O.SGD: 'sgd', O.AdaGrad: 'adagrad', O.Adam: 'adam'}
-    rules = [O.SGD, O.AdaGrad, O.Adam]
+    rule_name = {O.AdaGrad: 'adagrad', O.Adam: 'adam'}
+    rules = [O.AdaGrad, O.Adam]
 
     model_types = ['linreg', 'context_concat', 'multilayer', 'multilayer_context']
-    lrs = [0.1, 0.01, 0.001, 0.0001]
-    reg_coeffs = [0, 0.0001, 0.001, 0.01]
+    lrs = [0.1, 0.01, 0.001]
     wlen = True
     pos = True
+    prev_time = True
     n_pos_units = 50
     outs = ['tanh', 'id']
     n_hidden = 200
@@ -73,61 +73,54 @@ if __name__ == '__main__':
 
     for model_type in model_types:
         for out_type in outs:
-            for reg_coeff in reg_coeffs:
-                for lr in lrs:
-                    for r in rules:
+            for lr in lrs:
+                for r in rules:
 
-                        if out_type == 'tanh':
-                            out = F.tanh
-                        elif out_type == 'relu':
-                            out = F.relu
-                        elif out_type == 'sigmoid':
-                            out = F.sigmoid
-                        elif out_type == 'id':
-                            out = F.identity
-                        else:
-                            raise Exception('Unknown output type: {}'.format(out_type))
+                    if out_type == 'tanh':
+                        out = F.tanh
+                    elif out_type == 'id':
+                        out = F.identity
+                    else:
+                        raise Exception('Unknown output type: {}'.format(out_type))
 
-                        if model_type == 'linreg':
-                            model = LinReg(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-                            train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
-                            val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
-                        elif model_type == 'context_concat':
-                            model = LinRegContextConcat(n_vocab, n_units, loss_func, out, window=window, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-                            train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
-                            val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
-                        elif model_type == 'multilayer':
-                            model = Multilayer(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, n_layers=n_layers, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-                            train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
-                            val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
-                        elif model_type == 'multilayer_context':
-                            model = MultilayerContext(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, n_layers=n_layers, window=1, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-                            train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
-                            val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
-                        else:
-                            raise Exception('Unknown model type: {}'.format(model))
+                    if model_type == 'linreg':
+                        model = LinReg(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
+                        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
+                        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
+                    elif model_type == 'context_concat':
+                        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, window=window, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
+                        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
+                        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
+                    elif model_type == 'multilayer':
+                        model = Multilayer(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, n_layers=n_layers, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
+                        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
+                        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
+                    elif model_type == 'multilayer_context':
+                        model = MultilayerContext(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, n_layers=n_layers, window=1, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
+                        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=wlen, pos=pos)
+                        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=wlen, pos=pos)
+                    else:
+                        raise Exception('Unknown model type: {}'.format(model))
 
-                        if gpu >= 0:
-                            model.to_gpu()
+                    if gpu >= 0:
+                        model.to_gpu()
 
-                        name = '{}_{}_lr{}_reg{}'.format(out_type, rule_name[r], lr, reg_coeff)
-                        print('{}_{}'.format(model_type, name))
-                        optimizer = r(lr)
-                        optimizer.setup(model)
-                        l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
-                        optimizer.add_hook(l2_reg, 'l2')
+                    name = '{}_{}_lr{}_noreg'.format(out_type, rule_name[r], lr)
+                    print('{}_{}'.format(model_type, name))
+                    optimizer = r(lr)
+                    optimizer.setup(model)
 
-                        updater = training.StandardUpdater(train_iter, optimizer, converter=convert, device=gpu)
-                        trainer = training.Trainer(updater, (epoch, 'epoch'), out=out_path + os.sep + model_type)
+                    updater = training.StandardUpdater(train_iter, optimizer, converter=convert, device=gpu)
+                    trainer = training.Trainer(updater, (epoch, 'epoch'), out=out_path + os.sep + model_type)
 
-                        trainer.extend(extensions.Evaluator(val_iter, model, converter=convert, device=gpu))
+                    trainer.extend(extensions.Evaluator(val_iter, model, converter=convert, device=gpu))
 
-                        trainer.extend(extensions.LogReport(log_name='{}.log'.format(name)))
-                        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+                    trainer.extend(extensions.LogReport(log_name='{}.log'.format(name)))
+                    trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
 
-                        plot_rep = extensions.PlotReport(['main/loss', 'validation/main/loss'], file_name=name + '.pdf')
-                        trainer.extend(plot_rep)
+                    #plot_rep = extensions.PlotReport(['main/loss', 'validation/main/loss'], file_name=name + '.pdf')
+                    #trainer.extend(plot_rep)
 
-                        trainer.extend(extensions.ProgressBar())
-                        trainer.run()
+                    trainer.extend(extensions.ProgressBar())
+                    trainer.run()
 

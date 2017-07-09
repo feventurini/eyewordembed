@@ -3,14 +3,16 @@ import numpy as np
 
 class EyeTrackingWindowIterator(chainer.dataset.Iterator):
 
-    def __init__(self, dataset, window, batch_size, repeat=True, shuffle=True, lens=False, pos=False):
+    def __init__(self, dataset, window, batch_size, repeat=True, shuffle=True, wlen=False, pos=False, prev_time=False):
         self.words = dataset[:,0].astype(np.int32)#.reshape(-1,1)
         self.times = dataset[:,1].astype(np.float32)
         self.wlens = dataset[:,2].astype(np.float32)
         self.pos_tags = dataset[:,3].astype(np.int32)
+        self.previous_times = dataset[:,4].astype(np.float32)
         
-        self.lens = lens
+        self.wlen = wlen
         self.pos = pos
+        self.prev_time = prev_time
 
         self.window = window
         self.batch_size = batch_size
@@ -53,16 +55,39 @@ class EyeTrackingWindowIterator(chainer.dataset.Iterator):
             self.current_position = i_end
 
 
-        if self.lens and self.pos:
+        if self.prev_time and self.pos and self.wlen:
+            ls = self.wlens.take(pos)
+            ps = self.pos_tags.take(pos)
+            ts = self.previous_times.take(pos)
+            return (context, ls, ps, ts), times
+        
+        elif self.wlen and self.pos:
             ls = self.wlens.take(pos)
             ps = self.pos_tags.take(pos)
             return (context, ls, ps), times
-        elif self.lens:
+        
+        elif self.wlen and self.prev_time:
+            ls = self.wlens.take(pos)
+            ts = self.previous_times.take(pos)
+            return (context, ls, ts), times
+        
+        elif self.prev_time and self.pos:
+            ts = self.previous_times.take(pos)
+            ps = self.pos_tags.take(pos)
+            return (context, ps, ts), times        
+        
+        elif self.wlen:
             ls = self.wlens.take(pos)
             return (context, ls), times 
+        
         elif self.pos:
             ps = self.pos_tags.take(pos)
             return (context, ps), times
+        
+        elif self.prev_time:
+            ts = self.previous_times.take(pos)
+            return (context, ts), times        
+        
         else:
             return (context,), times
 
@@ -80,26 +105,47 @@ class EyeTrackingWindowIterator(chainer.dataset.Iterator):
 
 class EyeTrackingSerialIterator(chainer.iterators.SerialIterator):
     def __init__(self, *args, **kwargs):
-        self.lens = kwargs.pop('lens', False)
+        self.wlen = kwargs.pop('wlen', False)
         self.pos = kwargs.pop('pos', False)
+        self.prev_time = kwargs.pop('prev_time', False)
         super().__init__(*args, **kwargs)
 
     def __next__(self):
         batch = super().__next__()
-        words, times, ls, ps = map(np.array, zip(*[tuple(l) for l in batch]))
+        words, times, ls, ps, ts = map(np.array, zip(*[tuple(l) for l in batch]))
         words = words.astype(np.int32).reshape(-1,1)
         times = times.astype(np.float32).reshape(-1,1)
 
-        if self.lens and self.pos:
+        if self.prev_time and self.pos and self.wlen:
+            ls = ls.astype(np.float32).reshape(-1,1)
+            ps = ps.astype(np.int32).reshape(-1,1)
+            ts = ts.astype(np.float32).reshape(-1,1)
+            return (words, ls, ps, ts), times
+
+        elif self.wlen and self.pos:
             ls = ls.astype(np.float32).reshape(-1,1)
             ps = ps.astype(np.int32).reshape(-1,1)
             return (words, ls, ps), times
-        elif self.lens:
+
+        elif self.wlen and self.prev_time:
+            ls = ls.astype(np.float32).reshape(-1,1)
+            ts = ts.astype(np.float32).reshape(-1,1)
+            return (words, ls, ts), times
+
+        elif self.prev_time and self.pos:
+            ps = ps.astype(np.int32).reshape(-1,1)
+            ts = ts.astype(np.float32).reshape(-1,1)
+            return (words, ps, ts), times
+
+        elif self.wlen:
             ls = ls.astype(np.float32).reshape(-1,1)
             return (words, ls), times 
         elif self.pos:
             ps = ps.astype(np.int32).reshape(-1,1)
             return (words, ps), times
+        elif self.prev_time and self.pos:
+            ts = ts.astype(np.float32).reshape(-1,1)
+            return (words, ts), times
         else:
             return (words,), times
     

@@ -22,8 +22,8 @@ def listdir(folder, filt=None):
 	return list(filter(lambda x: x.endswith(filt), l)) if filt else l
 
 if __name__ == '__main__':
-	folder = 'result/best_model'
-	out_name = 'best_model_statistics_20epochs.tsv'
+	folder = 'result/initial_exploration'
+	out_name = 'initial_exploration_statistics.tsv'
 
 	result = []
 	for filename in listdir(folder):
@@ -35,11 +35,11 @@ if __name__ == '__main__':
 			if l not in result:
 				result.append(l)
 
-	result = sorted(result, key=lambda x: x['validation/main/loss'][19])
+	result = sorted(result, key=lambda x: x['validation/main/loss'][-1])
 	with open(out_name, 'w+') as out:
 		for i in result:
 			print(i['name'], file=out)
 			del i['name']
 			for k in i:
-				print('{}\t{}'.format(k,'\t'.join(map(str,i[k][:2]))), file=out)
+				print('{}\t{}'.format(k,'\t'.join(map(str,i[k]	))), file=out)
 

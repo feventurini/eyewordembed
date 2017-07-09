@@ -6,6 +6,7 @@ sys.path.insert(0, '../utilities')
 import timing
 import util
 import os
+from scipy.ndimage.interpolation import shift
 
 dundee_folder = '../dataset/dundee_parsed_gr'
 words_path = os.path.join(dundee_folder,'WORD')
@@ -47,8 +48,8 @@ def load_dataset(word2id=None, gensim=False):
 	pos_array = np.array([pos2id[p] for p in ps]).reshape((-1,1))
 	lens_array = np.array(ls).reshape((-1,1))
 
-	dataset = np.hstack((words_array,times,lens_array,pos_array))
-
+	dataset = np.hstack((words_array[1:],times[1:],lens_array[1:],pos_array[1:],times[:-1]))
+	
 	np.random.shuffle(dataset)
 	train, val = np.split(dataset, [int(.9*len(dataset))])
 	

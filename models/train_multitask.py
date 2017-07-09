@@ -118,13 +118,13 @@ if __name__ == '__main__':
     #print(model.wv.vocab['the'].index)
 
     if model_eyetracking_inference == 'linreg':
-        model_eyetracking = LinReg(n_vocab, n_units, loss_func, out_eyetracking, wlen=lens, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, lens=lens, pos=pos)
-        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, lens=lens, pos=pos)
+        model_eyetracking = LinReg(n_vocab, n_units, loss_func, out_eyetracking, wlen=wlen, pos=pos, n_pos=n_pos, prev_time=prev_time, n_pos_units=n_pos_units)
+        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
     elif model_eyetracking_inference == 'context':
         model_eyetracking = LinRegContextConcat(n_vocab, n_units, loss_func, out_eyetracking, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingWindowIterator(train, window, batchsize_eyetracking, repeat=True, shuffle=True, lens=lens, pos=pos)
-        val_iter = EyeTrackingWindowIterator(val, window, batchsize_eyetracking, repeat=False, shuffle=True, lens=lens, pos=pos)
+        train_iter = EyeTrackingWindowIterator(train, window, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+        val_iter = EyeTrackingWindowIterator(val, window, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
     else:
         raise Exception('Unknown model type: {}'.format(model))
 

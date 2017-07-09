@@ -31,7 +31,7 @@ from multitask_batch_iter import BatchIterator
 from config import *
 from eyetracking import *
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.WARNING)
 
 class Word2VecExtension(E.Extension):
     trigger = 1, 'iteration'
@@ -84,23 +84,21 @@ if __name__ == '__main__':
     i = int(sys.argv[1])
 
     if i==1:
-        config = ('linreg', 'id', 0.001, O.AdaGrad, 0.01)
-    elif i==2:
         config = ('linreg', 'id', 0.0, O.AdaGrad, 0.01)
+    elif i==2:
+        config = ('linreg', 'tanh', 0.0, O.AdaGrad, 0.01)
     elif i==3:
-        config = ('linreg', 'tanh', 0.001, O.Adam, 0.01)
+        config = ('context_concat', 'id', 0.0, O.AdaGrad, 0.01)
     elif i==4:
-        config = ('context_concat', 'id', 0.001, O.AdaGrad, 0.01)
+        config = ('context_concat', 'tanh', 0.0, O.AdaGrad, 0.01)
     elif i==5:
-        config = ('context_concat', 'id', 0.01, O.Adam, 0.001)
+        config = ('multilayer', 'id', 0.0, O.AdaGrad, 0.01)
     elif i==6:
-        config = ('multilayer', 'id', 0.0001, O.AdaGrad, 0.01)
+        config = ('multilayer', 'tanh', 0.0, O.AdaGrad, 0.01)
     elif i==7:
-        config = ('multilayer', 'tanh', 0.0001, O.Adam, 0.1)
+        config = ('multilayer_context', 'id', 0.0, O.AdaGrad, 0.01)
     elif i==8:
-        config = ('multilayer_context', 'id', 0.001, O.Adam, 0.001)
-    elif i==9:
-        config = ('multilayer_context', 'id', 0.001, O.AdaGrad, 0.01)
+        config = ('multilayer_context', 'tanh', 0.0, O.AdaGrad, 0.01)
 
     model_eyetracking_inference, out_type_eyetracking, reg_coeff, learning_rule, lr = config
 

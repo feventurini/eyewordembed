@@ -86,7 +86,7 @@ if __name__ == '__main__':
                         help='learning minibatch size')
     parser.add_argument('--epoch', '-e', default=20, type=int,
                         help='number of epochs to learn')
-    parser.add_argument('--model', '-m', choices=['linreg', 'multilayer', 'context', 'baseline'],
+    parser.add_argument('--model', '-m', choices=['linreg', 'multilayer', 'context', 'multilayer_context', 'baseline'],
                     default='linreg',
                     help='model type ("linreg", "context")')
     parser.add_argument('--window', '-w', default=1, type=int,
@@ -98,8 +98,6 @@ if __name__ == '__main__':
                         help='Coefficient for L2 regularization')
     parser.add_argument('--out', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--test', dest='test', action='store_true')
-    parser.set_defaults(test=False)
 
     args = parser.parse_args()
 
@@ -131,10 +129,6 @@ if __name__ == '__main__':
     # print('Mean validation times: {}'.format(np.mean(temp)))
     # print('Std_dev validation times: {}'.format(np.sqrt(np.var(temp))))    
 
-    if args.test:
-        train = train[:100]
-        val = val[:100]
-
     n_vocab = len(vocab)
     n_pos = len(pos2id)
     print('n_vocab: %d' % n_vocab)
@@ -160,21 +154,21 @@ if __name__ == '__main__':
     window = args.window
 
     if args.model == 'linreg':
-        model = LinReg(n_vocab, n_units, loss_func, out, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=True, pos=True)
-        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=True, pos=True)
+        model = LinReg(n_vocab, n_units, loss_func, out, wlen=True, pos=True, prev_time=True, n_pos=n_pos, n_pos_units=50)
+        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, wlen=True, pos=True, prev_time=True)
+        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, wlen=True, pos=True, prev_time=True)
     elif args.model == 'multilayer':
-        model = Multilayer(n_vocab, n_units, loss_func, out, wlen=True, pos=True, n_layers=1, n_hidden=50, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, lens=True, pos=True)
-        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, lens=True, pos=True)
+        model = Multilayer(n_vocab, n_units, loss_func, out, wlen=True, pos=True, prev_time=True, n_layers=1, n_hidden=50, n_pos=n_pos, n_pos_units=50)
+        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, wlen=True, pos=True, prev_time=True)
+        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, wlen=True, pos=True, prev_time=True)
     elif args.model == 'context':
-        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=True, pos=True)
-        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=True, pos=True)
+        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=True, pos=True, prev_time=True, n_pos=n_pos, n_pos_units=50)
+        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=True, pos=True, prev_time=True)
+        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=True, pos=True, prev_time=True)
     elif args.model == 'multilayer_context':
-        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, lens=True, pos=True)
-        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, lens=True, pos=True)
+        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=True, pos=True, prev_time=True, n_pos=n_pos, n_pos_units=50)
+        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=True, pos=True, prev_time=True)
+        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=True, pos=True, prev_time=True)
     elif args.model == 'baseline':
         model = Baseline(0.0, loss_func)
         train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True)
@@ -185,7 +179,7 @@ if __name__ == '__main__':
     if args.gpu >= 0:
         model.to_gpu()
 
-    optimizer = O.Adam(0.01)
+    optimizer = O.Adam(0.001)
     optimizer.setup(model)
     l2_reg = chainer.optimizer.WeightDecay(args.reg_coeff)
     optimizer.add_hook(l2_reg, 'l2')

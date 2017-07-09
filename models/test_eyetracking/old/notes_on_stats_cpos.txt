@@ -1,0 +1,44 @@
+LINREG id_adagrad_lr0.01_reg0.001
+0.6034205091
+0.7411373019
+
+LINREG tanh_adagrad_lr0.01_reg0.001
+0.7196208922
+0.7467446327
+
+ok
+-----------------------------------------------------
+MULTILAYER id_adagrad_lr0.01_reg0.0001
+0.5719408894
+0.7423054218
+
+MULTILAYER id_adam_lr0.01_reg0.0001
+0.5921559901
+0.7417651653
+
+might need regularization? tbf with multitask learning, might not need
+regularization at all
+----------------------------------------------------
+CONTEXT_CONCAT id_adagrad_lr0.01_reg0.001
+0.5506503341
+0.7475230694
+
+CONTEXT_CONCAT tanh_adagrad_lr0.1_reg0.001
+0.6940358764
+0.7578688145
+
+same as before
+---------------------------------------------------
+MULTILAYER_CONTEXT tanh_adam_lr0.01_reg0.001
+0.7692360992
+0.7503888607
+
+MULTILAYER_CONTEXT id_adagrad_lr0.01_reg0.001
+0.7745139684
+0.7494819522
+----------------------------------------------------
+
+Adam looks good with 0.01/0.001, Adagrad looks good with 0.1/0.01
+
+
+
