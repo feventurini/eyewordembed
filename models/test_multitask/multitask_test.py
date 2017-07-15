@@ -31,7 +31,7 @@ from multitask_batch_iter import BatchIterator
 from config import *
 from eyetracking import *
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.WARNING)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.INFO)
 
 class Word2VecExtension(E.Extension):
     trigger = 1, 'iteration'
@@ -65,45 +65,52 @@ class Word2VecExtension(E.Extension):
             return
 
         self.__updateLR(len(batch_sentences))
-
-        # print("BEFORE:")
-        # print(self.model_word2vec.wv.syn0)
-        # input(self.model_eyetracking.embed.W.data)
-
-        # print(self.alpha, self.next_alpha)        
         self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=self.alpha, end_alpha=self.next_alpha)
 
-        # print("AFTER:")
-        # print(self.model_word2vec.wv.syn0)
-        # input(self.model_eyetracking.embed.W.data)
-
 if __name__ == '__main__':
-    
-    out_folder = 'test_multitask/result'
-    rule_name = {O.SGD: 'sgd', O.AdaGrad: 'adagrad', O.Adam: 'adam'}
-    i = int(sys.argv[1])
 
-    if i==1:
-        config = ('linreg', 'id', 0.0, O.AdaGrad, 0.01)
-    elif i==2:
-        config = ('linreg', 'tanh', 0.0, O.AdaGrad, 0.01)
-    elif i==3:
-        config = ('context_concat', 'id', 0.0, O.AdaGrad, 0.01)
-    elif i==4:
-        config = ('context_concat', 'tanh', 0.0, O.AdaGrad, 0.01)
-    elif i==5:
-        config = ('multilayer', 'id', 0.0, O.AdaGrad, 0.01)
-    elif i==6:
-        config = ('multilayer', 'tanh', 0.0, O.AdaGrad, 0.01)
-    elif i==7:
-        config = ('multilayer_context', 'id', 0.0, O.AdaGrad, 0.01)
-    elif i==8:
-        config = ('multilayer_context', 'tanh', 0.0, O.AdaGrad, 0.01)
+    n = 10
+    tarball_folder = '../dataset/downsampled_gigaword'
 
-    model_eyetracking_inference, out_type_eyetracking, reg_coeff, learning_rule, lr = config
+    model_w2v = ['skipgram', 'cbow']
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
+    model_types = ['linreg', 'context', 'multilayer', 'multilayer_context']
+    rule_name = {O.Adam: 'adam'}
+    rules = [O.Adam]
+    lrs = [0.01, 0.001]
+    wlen = True
+    pos = True
+    prev_fix = True
+    outs = ['tanh', 'id']
+    reg_coeffs = [0.0, 0.0001]
 
-    name = 'model_{}_{}_{}_{}_{}lr_{}reg_coeff'.format(
-        model_word2vec, model_eyetracking_inference, out_type_eyetracking, rule_name[learning_rule], lr, reg_coeff)
+    configurations = []
+
+    for model_word2vec in model_w2v:
+        for tarball in tarballs:
+            for model_type in model_types:
+                for out_type in outs:
+                    for lr in lrs:
+                        for r in rules:
+                            for reg_coeff in reg_coeffs:
+                                if model_type.startswith('multilayer') and out_type=='id':
+                                    continue
+                                configurations.append((model_word2vec, tarball, model_type, out_type, reg_coeff, r, lr))
+
+
+    configurations.reverse()  
+    # print(len(configurations))
+
+    i = int(sys.argv[1]) - 1
+    model_word2vec, tarball, model_eyetracking_inference, out_type_eyetracking, reg_coeff, learning_rule, lr = configurations[i]
+
+    out_folder = os.path.join('test_multitask/result', tarball.split('.')[0], model_word2vec)
+    train_tarball = os.path.join(tarball_folder, tarball)
+
+    k = tarball.split('.')[0].split('_')[-1]
+
+    name = 'model_{}_{}_{}_{}_{}lr_{}reg_coeff_{}downsample'.format(
+        model_word2vec, model_eyetracking_inference, out_type_eyetracking, rule_name[learning_rule], lr, reg_coeff, k)
     print(name)
     
     if out_type_eyetracking == 'tanh':
@@ -121,7 +128,7 @@ if __name__ == '__main__':
 
     model = gensim.models.word2vec.Word2Vec(sentences=None, size=n_units, alpha=alpha, window=window, min_count=min_count, max_vocab_size=max_vocab_size, 
     sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, 
-    iter=epoch, null_word=0, trim_rule=None, sorted_vocab=1, batch_words=10000)
+    iter=epoch, null_word=0, trim_rule=None, sorted_vocab=1)
 
     if not os.path.isdir(out_folder):
         os.makedirs(out_folder)
@@ -137,19 +144,22 @@ if __name__ == '__main__':
         logging.info("Saving initial model with built vocabulary...")
         model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model")
 
-    word2vec_iter = BatchIterator(sentences, epoch, model.corpus_count, batchsize_word2vec)
 
     vocab, pos2id, train, val, mean, std = pd.load_dataset(model.wv.vocab, gensim=True)
 
     print('Data samples eyetracking: %d' % len(train))
     print('Data samples word2vec:\t%d' % model.corpus_count)
 
-    b = np.ceil(model.corpus_count/float(batchsize_word2vec))
-    batchsize_eyetracking = int(np.floor(len(train)/b))
+    b = np.ceil(len(train)/float(batchsize_eyetracking))
+    batchsize_word2vec = int(np.floor(model.corpus_count/b))
+
+    model.batch_words = np.ceil(batchsize_word2vec/10)
 
     print('Batch-size eyetracking: {}'.format(batchsize_eyetracking))
     print('Batch-size word2vec: {}'.format(batchsize_word2vec))
     print('')
+
+    word2vec_iter = BatchIterator(sentences, epoch, model.corpus_count, batchsize_word2vec)
 
     loss_func = F.mean_squared_error
 
@@ -158,21 +168,21 @@ if __name__ == '__main__':
     #print(model.wv.vocab['the'].index)
 
     if model_eyetracking_inference == 'linreg':
-        model_eyetracking = LinReg(n_vocab, n_units, loss_func, out_eyetracking, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
-        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
-    elif model_eyetracking_inference == 'context_concat':
-        model_eyetracking = LinRegContextConcat(n_vocab, n_units, loss_func, out_eyetracking, window=1, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-        train_iter = EyeTrackingWindowIterator(train, 1, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
-        val_iter = EyeTrackingWindowIterator(val, 1, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+        model_eyetracking = LinReg(n_vocab, n_units, loss_func, out_eyetracking, wlen=wlen, pos=pos, prev_fix=prev_fix, n_pos=n_pos, n_pos_units=n_pos_units)
+        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+    elif model_eyetracking_inference == 'context':
+        model_eyetracking = LinRegContextConcat(n_vocab, n_units, loss_func, out_eyetracking, window=1, wlen=wlen, pos=pos, prev_fix=prev_fix, n_pos=n_pos, n_pos_units=n_pos_units)
+        train_iter = EyeTrackingWindowIterator(train, 1, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingWindowIterator(val, 1, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
     elif model_eyetracking_inference == 'multilayer':
-        model_eyetracking = Multilayer(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, n_layers=n_layers, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
-        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+        model_eyetracking = Multilayer(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, n_pos=n_pos, n_pos_units=n_pos_units)
+        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
     elif model_eyetracking_inference == 'multilayer_context':
-        model_eyetracking = MultilayerContext(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, n_layers=n_layers, window=1, wlen=wlen, pos=pos, prev_time=prev_time, n_pos=n_pos, n_pos_units=n_pos_units)
-        train_iter = EyeTrackingWindowIterator(train, 1, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
-        val_iter = EyeTrackingWindowIterator(val, 1, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+        model_eyetracking = MultilayerContext(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, n_layers=n_layers, window=1, wlen=wlen, pos=pos, prev_fix=prev_fix, n_pos=n_pos, n_pos_units=n_pos_units)
+        train_iter = EyeTrackingWindowIterator(train, 1, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingWindowIterator(val, 1, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
     else:
         raise Exception('Unknown model type: {}'.format(model))
 

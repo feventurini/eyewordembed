@@ -22,8 +22,8 @@ def listdir(folder, filt=None):
 	return list(filter(lambda x: x.endswith(filt), l)) if filt else l
 
 if __name__ == '__main__':
-	folder = 'result/initial_exploration'
-	out_name = 'initial_exploration_statistics.tsv'
+	folder = 'result'
+	out_name = 'statistics_noreg.tsv'
 
 	result = []
 	for filename in listdir(folder):

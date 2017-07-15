@@ -30,7 +30,7 @@ from config import *
 from eyetracking import *
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.INFO)
-
+    
 class Word2VecExtension(E.Extension):
     trigger = 1, 'iteration'
     default_name = 'word2vec_extension'
@@ -118,23 +118,31 @@ if __name__ == '__main__':
     #print(model.wv.vocab['the'].index)
 
     if model_eyetracking_inference == 'linreg':
-        model_eyetracking = LinReg(n_vocab, n_units, loss_func, out_eyetracking, wlen=wlen, pos=pos, n_pos=n_pos, prev_time=prev_time, n_pos_units=n_pos_units)
-        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
-        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+        model_eyetracking = LinReg(n_vocab, n_units, loss_func, out_eyetracking, wlen=wlen, pos=pos, n_pos=n_pos, prev_fix=prev_fix, n_pos_units=n_pos_units)
+        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
     elif model_eyetracking_inference == 'context':
         model_eyetracking = LinRegContextConcat(n_vocab, n_units, loss_func, out_eyetracking, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingWindowIterator(train, window, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
-        val_iter = EyeTrackingWindowIterator(val, window, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_time=prev_time)
+        train_iter = EyeTrackingWindowIterator(train, window, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingWindowIterator(val, window, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+    elif model_eyetracking_inference == 'multilayer':
+        model_eyetracking = LinReg(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, n_layers=n_layers, wlen=wlen, pos=pos, n_pos=n_pos, prev_fix=prev_fix, n_pos_units=n_pos_units)
+        train_iter = EyeTrackingSerialIterator(train, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingSerialIterator(val, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+    elif model_eyetracking_inference == 'multilayer_context':
+        model_eyetracking = LinRegContextConcat(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, n_layers=n_layers, wlen=True, pos=True, n_pos=n_pos, n_pos_units=50)
+        train_iter = EyeTrackingWindowIterator(train, window, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
+        val_iter = EyeTrackingWindowIterator(val, window, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix)
     else:
-        raise Exception('Unknown model type: {}'.format(model))
+        raise Exception('Unknown model type: {}'.format(model_eyetracking_inference))
 
     if gpu >= 0:
         model.to_gpu()
 
-    optimizer = O.Adam()
+    optimizer = O.AdaGrad(0.01)
     optimizer.setup(model_eyetracking)
-    l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
-    optimizer.add_hook(l2_reg, 'l2')
+    # l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
+    # optimizer.add_hook(l2_reg, 'l2')
 
     updater = chainer.training.StandardUpdater(train_iter, optimizer, converter=convert, device=gpu)
     trainer = chainer.training.Trainer(updater, (epoch, 'epoch'), out=out_folder)

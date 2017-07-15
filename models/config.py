@@ -1,6 +1,6 @@
 from chainer import functions as F
 
-train_tarball = '../gigaword_train.tar.bz2'
+train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_32.tar.bz2'
 
 # ---------------------------------------------- #
 ## EYETRACKING PARAMETERS
@@ -13,7 +13,7 @@ if model_eyetracking_inference == 'context':
 reg_coeff = 0.001
 wlen = True
 pos = True
-prev_time = True
+prev_fix = True
 n_pos_units = 50
 n_hidden = 200
 n_layers = 1
@@ -21,7 +21,6 @@ n_layers = 1
 # ---------------------------------------------- #
 ## WORD2VEC PARAMETERS
 window = 5
-batchsize_word2vec = 100000
 model_word2vec = 'cbow' ## must be in ['skipgram', 'cbow']
 out_type_word2vec = 'ns' ## must be in ['ns', 'hsm', 'original'] 
 
@@ -30,7 +29,7 @@ alpha = 0.025
 min_count = 5
 max_vocab_size = 400000
 sub_sampling = 0.001
-n_workers = 3
+n_workers = 10
 cbow_mean = 1 # 1:mean, 0:sum
 report_delay = 3.0
 

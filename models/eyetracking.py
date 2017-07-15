@@ -18,27 +18,27 @@ class Baseline(chainer.Chain):
 
 class LinReg(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, wlen=False, pos=False, prev_time=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
         super(LinReg, self).__init__()
 
         self.pos = pos
         self.wlen = wlen
-        self.prev_time = prev_time
+        self.prev_fix = prev_fix
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
 
-            if self.pos and self.wlen and self.prev_time:
+            if self.pos and self.wlen and self.prev_fix:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + n_pos_units + 2
 
-            elif self.pos and self.prev_time:
+            elif self.pos and self.prev_fix:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + n_pos_units + 1 
             
-            elif self.wlen and self.prev_time:
+            elif self.wlen and self.prev_fix:
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + 2 
             
@@ -50,7 +50,7 @@ class LinReg(chainer.Chain):
             elif self.wlen:
                 n_inputs = n_units + 1
             
-            elif self.prev_time:
+            elif self.prev_fix:
                 n_inputs = n_units + 1
             
             elif self.pos:
@@ -66,7 +66,7 @@ class LinReg(chainer.Chain):
             self.loss_func = loss_func
 
     def _embed_input(self, inputs):
-        if self.pos and self.wlen and self.prev_time:
+        if self.pos and self.wlen and self.prev_fix:
             w, l, p, t = inputs
             w = chainer.Variable(w, name='word')
             p = chainer.Variable(p, name='pos_tag')
@@ -97,8 +97,8 @@ class LinReg(chainer.Chain):
             l.name = 'word_length'
             e_p.name = 'pos_embedding'
 
-        elif self.pos and self.prev_time:
-            w, l, p = inputs
+        elif self.pos and self.prev_fix:
+            w, p, t = inputs
             w = chainer.Variable(w, name='word')
             p = chainer.Variable(p, name='pos_tag')
             t = chainer.Variable(t, name='previous_fixation')
@@ -111,7 +111,7 @@ class LinReg(chainer.Chain):
             t.name = 'previous_fixation'
             e_p.name = 'pos_embedding'
 
-        elif self.prev_time and self.wlen:
+        elif self.prev_fix and self.wlen:
             w, l, t = inputs
             w = chainer.Variable(w, name='word')
             l = chainer.Variable(l, name='word_length')
@@ -148,7 +148,7 @@ class LinReg(chainer.Chain):
 
             l.name = 'word_length'
 
-        elif self.prev_time:
+        elif self.prev_fix:
             w, t = inputs
 
             w = chainer.Variable(w, name='word')
@@ -158,7 +158,7 @@ class LinReg(chainer.Chain):
             t = F.reshape(t,(-1,1,1))
             h = F.concat((e_w, t), axis=2)
 
-            l.name = 'word_length'
+            t.name = 'previous_fixation'
 
         else:
             if isinstance(inputs, tuple):
@@ -185,27 +185,27 @@ class LinReg(chainer.Chain):
 
 class Multilayer(LinReg):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, n_hidden=50, n_layers=1, wlen=False, pos=False, prev_time=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, n_hidden=50, n_layers=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
         super(LinReg, self).__init__()
 
         self.pos = pos
         self.wlen = wlen
-        self.prev_time = prev_time
+        self.prev_fix = prev_fix
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
 
-            if self.pos and self.wlen and self.prev_time:
+            if self.pos and self.wlen and self.prev_fix:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + n_pos_units + 2
 
-            elif self.pos and self.prev_time:
+            elif self.pos and self.prev_fix:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + n_pos_units + 1 
             
-            elif self.wlen and self.prev_time:
+            elif self.wlen and self.prev_fix:
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + 2 
             
@@ -217,7 +217,7 @@ class Multilayer(LinReg):
             elif self.wlen:
                 n_inputs = n_units + 1
             
-            elif self.prev_time:
+            elif self.prev_fix:
                 n_inputs = n_units + 1
             
             elif self.pos:
@@ -260,7 +260,7 @@ class Multilayer(LinReg):
 @DeprecationWarning
 class LinRegContextSum(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_time=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
         super(LinRegContextSum, self).__init__()
 
         self.pos = pos
@@ -354,29 +354,29 @@ class LinRegContextSum(chainer.Chain):
 
 class LinRegContextConcat(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_time=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
         super(LinRegContextConcat, self).__init__()
 
         self.n_units = n_units
         self.n_pos_units = n_pos_units
         self.pos = pos
         self.wlen = wlen
-        self.prev_time = prev_time
+        self.prev_fix = prev_fix
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
 
-            if self.pos and self.wlen and self.prev_time:
+            if self.pos and self.wlen and self.prev_fix:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + n_pos_units + 2
 
-            elif self.pos and self.prev_time:
+            elif self.pos and self.prev_fix:
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + n_pos_units + 1 
             
-            elif self.wlen and self.prev_time:
+            elif self.wlen and self.prev_fix:
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
                 n_inputs = n_units + 2 
             
@@ -388,7 +388,7 @@ class LinRegContextConcat(chainer.Chain):
             elif self.wlen:
                 n_inputs = n_units + 1
             
-            elif self.prev_time:
+            elif self.prev_fix:
                 n_inputs = n_units + 1
             
             elif self.pos:
@@ -399,12 +399,13 @@ class LinRegContextConcat(chainer.Chain):
             else:
                 n_inputs = n_units
 
-            self.lin = L.Linear(n_inputs * (window + 1), 1, initialW=I.Uniform(1. / n_inputs))
+            n_inputs *= (window + 1)
+            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
             self.out = out
             self.loss_func = loss_func
 
     def _embed_input(self, inputs):
-        if self.pos and self.wlen and self.prev_time:
+        if self.pos and self.wlen and self.prev_fix:
             w, l, p, t = inputs
             w = chainer.Variable(w, name='words_window')
             p = chainer.Variable(p, name='pos_tags_window')
@@ -432,8 +433,8 @@ class LinRegContextConcat(chainer.Chain):
             l.name = 'word_lengths_window'
             e_p.name = 'pos_embeddings'
 
-        elif self.pos and self.prev_time:
-            w, l, p = inputs
+        elif self.pos and self.prev_fix:
+            w, p, t = inputs
             w = chainer.Variable(w, name='words_window')
             p = chainer.Variable(p, name='pos_tags_window')
             t = chainer.Variable(t, name='previous_fixations_window')
@@ -445,7 +446,7 @@ class LinRegContextConcat(chainer.Chain):
             t.name = 'previous_fixations_window'
             e_p.name = 'pos_embeddings'
 
-        elif self.wlen and self.prev_time:
+        elif self.wlen and self.prev_fix:
             w, l, p = inputs
             w = chainer.Variable(w, name='words_window')
             t = chainer.Variable(t, name='previous_fixations_window')
@@ -478,8 +479,169 @@ class LinRegContextConcat(chainer.Chain):
 
             l.name = 'word_lengths_window'
 
-        elif self.prev_time:
+        elif self.prev_fix:
+            w, t = inputs
+            w = chainer.Variable(w, name='words_window')
+            t = chainer.Variable(t, name='previous_fixations_window')
+
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            h = F.concat((e_w, t), axis=1)
+
+            t.name = 'previous_fixations_window'
+
+        else:
+            if isinstance(inputs, tuple):
+                w = inputs[0]
+            else:
+                w = inputs
+
+            w = chainer.Variable(w, name='word')
+            h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+
+        h.name = 'concatenated_word_embeddings'
+        return h
+
+    def __call__(self, inputs, target):
+        target = chainer.Variable(target, name='target')
+        h = self._embed_input(inputs)
+        o = self.out(self.lin(h))
+        o.name = 'output_time_prediction'
+        loss = self.loss_func(o, target)
+        reporter.report({'loss': loss}, self)
+        return loss
+
+    def inference(self, inputs):
+        h = self._embed_input(inputs)
+        return self.out(self.lin(h))
+
+class LinRegContextConcatLimited(chainer.Chain):
+
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
+        super(LinRegContextConcatLimited, self).__init__()
+
+        self.n_units = n_units
+        self.n_pos_units = n_pos_units
+        self.pos = pos
+        self.wlen = wlen
+        self.prev_fix = prev_fix
+
+        with self.init_scope():
+            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
+
+            if self.pos and self.wlen and self.prev_fix:
+                assert(n_pos)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = (n_units)*(window + 1) + n_pos_units + 2
+
+            elif self.pos and self.prev_fix:
+                assert(n_pos)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = (n_units)*(window + 1) + n_pos_units + 1 
+            
+            elif self.wlen and self.prev_fix:
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = (n_units)*(window + 1) + 1
+            
+            elif self.pos and self.wlen:
+                assert(n_pos)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = (n_units)*(window + 1) + n_pos_units + 1 
+            
+            elif self.wlen:
+                n_inputs = (n_units)*(window + 1) + 1
+            
+            elif self.prev_fix:
+                n_inputs = (n_units)*(window + 1) + 1
+            
+            elif self.pos:
+                assert(n_pos)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = (n_units)*(window + 1) + n_pos_units
+            
+            else:
+                n_inputs = (n_units)*(window + 1)
+
+            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
+            self.out = out
+            self.loss_func = loss_func
+
+    def _embed_input(self, inputs):
+        if self.pos and self.wlen and self.prev_fix:
+            w, l, p, t = inputs
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+            t = chainer.Variable(t, name='previous_fixations_window')
+
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
+            h = F.concat((e_w, e_p, l, t), axis=1)# * (1. / w.shape[1])
+
+            l.name = 'word_lengths_window'
+            e_p.name = 'pos_embeddings'
+            t.name = 'previous_fixations_window'
+
+        elif self.pos and self.wlen:
+            w, l, p = inputs
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
+            h = F.concat((e_w, e_p, l), axis=1)# * (1. / w.shape[1])
+
+            l.name = 'word_lengths_window'
+            e_p.name = 'pos_embeddings'
+
+        elif self.pos and self.prev_fix:
+            w, p, t = inputs
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+            t = chainer.Variable(t, name='previous_fixations_window')
+
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
+            h = F.concat((e_w, e_p, t), axis=1)# * (1. / w.shape[1])
+
+            t.name = 'previous_fixations_window'
+            e_p.name = 'pos_embeddings'
+
+        elif self.wlen and self.prev_fix:
+            w, l, p = inputs
+            w = chainer.Variable(w, name='words_window')
+            t = chainer.Variable(t, name='previous_fixations_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            h = F.concat((e_w, l, t), axis=1)# * (1. / w.shape[1])
+
+            t.name = 'previous_fixations_window'
+            l.name = 'word_lengths_window'
+
+        elif self.pos:
+            w, p = inputs
+            w = chainer.Variable(w, name='words_window')
+            p = chainer.Variable(p, name='pos_tags_window')
+
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
+            h = F.concat((e_w, e_p), axis=1)
+
+            e_p.name = 'pos_embeddings'
+
+        elif self.wlen:
             w, l = inputs
+            w = chainer.Variable(w, name='words_window')
+            l = chainer.Variable(l, name='word_lengths_window')
+
+            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+            h = F.concat((e_w, l), axis=1)
+
+            l.name = 'word_lengths_window'
+
+        elif self.prev_fix:
+            w, t = inputs
             w = chainer.Variable(w, name='words_window')
             t = chainer.Variable(t, name='previous_fixations_window')
 
@@ -515,34 +677,52 @@ class LinRegContextConcat(chainer.Chain):
 
 class MultilayerContext(LinRegContextConcat):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, n_layers=1, n_hidden=50, wlen=False, pos=False, prev_time=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, n_layers=1, n_hidden=50, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
         super(LinRegContextConcat, self).__init__()
 
         self.n_units = n_units
         self.n_pos_units = n_pos_units
         self.pos = pos
         self.wlen = wlen
-        self.prev_time = prev_time
+        self.prev_fix = prev_fix
 
-        with self.init_scope():
+        with self.init_scope():            
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
 
-            if self.pos and self.wlen:
+            if self.pos and self.wlen and self.prev_fix:
                 assert(n_pos)
-                n_inputs = (n_units + n_pos_units + 1) * (window + 1)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = n_units + n_pos_units + 2
+
+            elif self.pos and self.prev_fix:
+                assert(n_pos)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = n_units + n_pos_units + 1 
+            
+            elif self.wlen and self.prev_fix:
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = n_units + 2 
+            
+            elif self.pos and self.wlen:
+                assert(n_pos)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = n_units + n_pos_units + 1 
             
             elif self.wlen:
-                n_inputs = (n_units + 1) * (window + 1)
+                n_inputs = n_units + 1
+            
+            elif self.prev_fix:
+                n_inputs = n_units + 1
             
             elif self.pos:
-                n_inputs = (n_units + n_pos_units) * (window + 1)
+                assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs = n_units + n_pos_units
             
             else:
-                n_inputs = n_units * (window + 1)
+                n_inputs = n_units
 
-            self.lin = L.Linear(n_inputs, n_hidden, initialW=I.Uniform(1. / n_inputs))
+            self.lin = L.Linear(n_inputs * (window + 1), n_hidden, initialW=I.Uniform(1. / n_inputs))
 
             self.layers = list()
             for i in range(n_layers - 1):

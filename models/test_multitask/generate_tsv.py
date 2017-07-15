@@ -23,7 +23,7 @@ def listdir(folder, filt=None):
 
 if __name__ == '__main__':
 	folder = 'result'
-	out_name = 'multitask_statistics.tsv'
+	out_name = 'multitask_statistics_noreg_prevtime.tsv'
 
 	result = []
 	for filename in listdir(folder):

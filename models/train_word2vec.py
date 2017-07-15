@@ -119,7 +119,6 @@ next_alpha = start_alpha - (start_alpha - end_alpha) * progress
 next_alpha = max(end_alpha, next_alpha)
 
 while batch_sentences:
-    print(alpha, next_alpha)
     model.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=alpha, end_alpha=next_alpha)
 
     batch_sentences = word2vec_iter.next()
@@ -132,5 +131,5 @@ while batch_sentences:
 
 # model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
 
-model.save(args.out + os.sep + "word2vec_gigaword_" + str(args.unit) + "_" + args.model + "_" + args.out_type + '_' + 
-        str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + ".model")
+# model.save(args.out + os.sep + "word2vec_gigaword_" + str(args.unit) + "_" + args.model + "_" + args.out_type + '_' + 
+#         str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + ".model")

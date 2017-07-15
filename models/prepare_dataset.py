@@ -32,13 +32,17 @@ def load_dataset(word2id=None, gensim=False):
 	pos2id, _= create_vocabulary(pos)
 
 	tot_fix_dur = util.load(data_path)
-	ws, ts, ls, ps = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos)))
+
+	words, tot_fix_dur, lens, pos, prev_tot_fix_dur = words[1:], tot_fix_dur[1:], lens[1:], pos[1:], tot_fix_dur[:-1]
+	ws, ts, ls, ps, pts = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos, prev_tot_fix_dur)))
 	
 	times = np.array(ts).reshape((-1,1))
+	ptimes = np.array(pts).reshape((-1,1))
 	mean = np.mean(times)
 	std = np.sqrt(np.var(times))
 
 	times = (times - mean) / std
+	ptimes = (ptimes - mean) / std
 
 	if not gensim:
 		words_array = np.array([word2id[w] for w in ws]).reshape((-1,1))
@@ -48,7 +52,7 @@ def load_dataset(word2id=None, gensim=False):
 	pos_array = np.array([pos2id[p] for p in ps]).reshape((-1,1))
 	lens_array = np.array(ls).reshape((-1,1))
 
-	dataset = np.hstack((words_array[1:],times[1:],lens_array[1:],pos_array[1:],times[:-1]))
+	dataset = np.hstack((words_array, times, lens_array, pos_array, ptimes))
 	
 	np.random.shuffle(dataset)
 	train, val = np.split(dataset, [int(.9*len(dataset))])

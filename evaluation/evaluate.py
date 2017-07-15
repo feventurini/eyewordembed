@@ -16,17 +16,17 @@ def analogy_accuracy(model, questions_file):
     correct = sum([len(acc[i]['correct']) for i in range(5)])
     total = sum([len(acc[i]['correct']) + len(acc[i]['incorrect']) for i in range(5)])
     accuracy = 100*float(correct)/total
-    print('\nSemantic: {:d}/{:d}, Accuracy: {:.2f}%'.format(correct, total, accuracy))
+    logging.info('\nSemantic: {:d}/{:d}, Accuracy: {:.2f}%'.format(correct, total, accuracy))
     
     correct = sum((len(acc[i]['correct']) for i in range(5, len(acc)-1)))
     total = sum((len(acc[i]['correct']) + len(acc[i]['incorrect'])) for i in range(5,len(acc)-1))
     accuracy = 100*float(correct)/total
-    print('Syntactic: {:d}/{:d}, Accuracy: {:.2f}%\n'.format(correct, total, accuracy))
+    logging.info('Syntactic: {:d}/{:d}, Accuracy: {:.2f}%\n'.format(correct, total, accuracy))
     
 def similarity_accuracy(model, similarity_file):
     acc = model.evaluate_word_pairs(similarity_file)
-    print('Pearson correlation coefficient: {:.2f}'.format(acc[0][0]))
-    print('Spearman rank correlation coefficient: {:.2f}'.format(acc[1][0]))
+    logging.info('Pearson correlation coefficient: {:.2f}'.format(acc[0][0]))
+    logging.info('Spearman rank correlation coefficient: {:.2f}'.format(acc[1][0]))
 
 def bats_analogy(model, bats_folder, output_folder):
     if not os.path.isdir('vsmlib'):
@@ -65,7 +65,6 @@ if __name__ == '__main__':
 
     logging.basicConfig(filename=os.path.join(args.output,args.input.split(os.sep)[-1] + '.log'), filemode='w', format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
 
     # load model
     if args.gensim:

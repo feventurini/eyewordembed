@@ -1,0 +1,21 @@
+Some notes:
+- using the previous fixation time, improved the eyetracking model
+
+What I could do:
+- change the architecture
+- finetune the lr of the eye-tracking model
+- since I only train for 20 epochs, maybe the eye-tracking model doesn't learn as much as it could, so I could maybe change the ratio
+  between word2vec batch - eye-tracking batch (currently 1:1), so that the eye-tracking model trains for more actual epochs. In other words,
+  finetune the number of epochs for each task
+- add more tasks, e.g. predicting first pass fixation, possible regression duration...
+
+Other questions:
+- regularization or no regularization? Ideally, since it's a multi-task setting, there is no need for actual regularization (also because it
+  impact the word vectors and limits them), but obviously, the best standalone eye-tracking model prefers regularization. 
+
+
+
+
+WHAT TO DO:
+- try out pre-trained word embeddings, train them on gigaword for a while, then pass them through the 
+- reduce the amount of data and make it comparable between eyetracking and wordembeddings
