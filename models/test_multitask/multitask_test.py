@@ -99,6 +99,14 @@ if __name__ == '__main__':
 
 
     configurations.reverse()  
+    start = configurations[0][1]
+    for i in range(len(configurations)):
+        if configurations[i][1]!=start:
+            print(i)
+            start = configurations[i][1]
+
+        print(configurations[i])
+    input()
     # print(len(configurations))
 
     i = int(sys.argv[1]) - 1

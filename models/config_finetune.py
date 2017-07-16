@@ -10,6 +10,7 @@ out_type_eyetracking = 'id' ## must be in ['tanh', 'sigmoid', 'id', 'relu']
 #batchsize_eyetracking = 100
 if model_eyetracking_inference == 'context':
     window_eyetracking = 1
+
 reg_coeff = 0.001
 wlen = True
 pos = True
@@ -21,7 +22,7 @@ n_layers = 1
 # ---------------------------------------------- #
 ## WORD2VEC PARAMETERS
 window = 5
-model_word2vec = 'cbow' ## must be in ['skipgram', 'cbow']
+model_word2vec = 'skipgram' ## must be in ['skipgram', 'cbow']
 out_type_word2vec = 'ns' ## must be in ['ns', 'hsm', 'original'] 
 
 ## GENSIM PARAMETERS
@@ -37,12 +38,10 @@ vocab_folder = 'init_vocab'
 
 # ---------------------------------------------- #
 ## SHARED PARAMETERS
-n_units = 100
+n_units = 300
 test = False
 out_folder = 'result'
-epoch = 20
-epoch_ratio = 1.0
-loss_ratio = 1.0
+epoch = 100
 batchsize_eyetracking = 1000
 
 if out_type_eyetracking == 'tanh':

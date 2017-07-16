@@ -18,12 +18,13 @@ class Baseline(chainer.Chain):
 
 class LinReg(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
         super(LinReg, self).__init__()
 
         self.pos = pos
         self.wlen = wlen
         self.prev_fix = prev_fix
+        self.loss_ratio = loss_ratio
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
@@ -177,7 +178,7 @@ class LinReg(chainer.Chain):
         o.name = 'output_time_prediction'
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
-        return loss
+        return self.loss_ratio * loss
 
     def inference(self, inputs):
         h = self._embed_input(inputs)
@@ -185,12 +186,13 @@ class LinReg(chainer.Chain):
 
 class Multilayer(LinReg):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, n_hidden=50, n_layers=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, n_hidden=50, n_layers=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
         super(LinReg, self).__init__()
 
         self.pos = pos
         self.wlen = wlen
         self.prev_fix = prev_fix
+        self.loss_ratio = loss_ratio
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
@@ -248,7 +250,7 @@ class Multilayer(LinReg):
         h.name = 'output_time_prediction'
         loss = self.loss_func(h, target)
         reporter.report({'loss': loss}, self)
-        return loss
+        return self.loss_ratio * loss
 
     def inference(self, inputs):
         i = (self._embed_input(inputs)) # called from superclass
@@ -260,7 +262,7 @@ class Multilayer(LinReg):
 @DeprecationWarning
 class LinRegContextSum(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
         super(LinRegContextSum, self).__init__()
 
         self.pos = pos
@@ -346,7 +348,7 @@ class LinRegContextSum(chainer.Chain):
         o.name = 'output_time_prediction'
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
-        return loss
+        return self.loss_ratio * loss
 
     def inference(self, inputs):
         h = self._embed_input(inputs)
@@ -354,7 +356,7 @@ class LinRegContextSum(chainer.Chain):
 
 class LinRegContextConcat(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
         super(LinRegContextConcat, self).__init__()
 
         self.n_units = n_units
@@ -362,6 +364,7 @@ class LinRegContextConcat(chainer.Chain):
         self.pos = pos
         self.wlen = wlen
         self.prev_fix = prev_fix
+        self.loss_ratio = loss_ratio
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
@@ -508,7 +511,7 @@ class LinRegContextConcat(chainer.Chain):
         o.name = 'output_time_prediction'
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
-        return loss
+        return self.loss_ratio * loss
 
     def inference(self, inputs):
         h = self._embed_input(inputs)
@@ -516,7 +519,7 @@ class LinRegContextConcat(chainer.Chain):
 
 class LinRegContextConcatLimited(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
         super(LinRegContextConcatLimited, self).__init__()
 
         self.n_units = n_units
@@ -524,6 +527,7 @@ class LinRegContextConcatLimited(chainer.Chain):
         self.pos = pos
         self.wlen = wlen
         self.prev_fix = prev_fix
+        self.loss_ratio = loss_ratio
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
@@ -669,7 +673,7 @@ class LinRegContextConcatLimited(chainer.Chain):
         o.name = 'output_time_prediction'
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
-        return loss
+        return self.loss_ratio * loss
 
     def inference(self, inputs):
         h = self._embed_input(inputs)
@@ -677,7 +681,7 @@ class LinRegContextConcatLimited(chainer.Chain):
 
 class MultilayerContext(LinRegContextConcat):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, n_layers=1, n_hidden=50, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=1, n_layers=1, n_hidden=50, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
         super(LinRegContextConcat, self).__init__()
 
         self.n_units = n_units
@@ -685,6 +689,7 @@ class MultilayerContext(LinRegContextConcat):
         self.pos = pos
         self.wlen = wlen
         self.prev_fix = prev_fix
+        self.loss_ratio = loss_ratio
 
         with self.init_scope():            
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
@@ -740,7 +745,7 @@ class MultilayerContext(LinRegContextConcat):
 
         loss = self.loss_func(h, target)
         reporter.report({'loss': loss}, self)
-        return loss
+        return self.loss_ratio * loss
 
     def inference(self, inputs):
         i = (self._embed_input(inputs)) # called from superclass
