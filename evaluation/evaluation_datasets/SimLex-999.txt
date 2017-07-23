@@ -1,4 +1,4 @@
-# word1	word2	SimLex999
+word1	word2	simlex999
 old	new	1.58
 smart	intelligent	9.2
 hard	difficult	8.77

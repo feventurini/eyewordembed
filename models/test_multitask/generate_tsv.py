@@ -23,10 +23,10 @@ def listdir(folder, filt=None):
 
 if __name__ == '__main__':
 	folder = 'result'
-	out_name = 'multitask_statistics_noreg_prevtime.tsv'
+	out_name = 'multitask_statistics.tsv'
 
 	result = []
-	for filename in listdir(folder):
+	for filename in listdir(folder, filt='.log'):
 		l = extract_log(filename)
 		filename = ' '.join([filename.split(os.sep)[-2].upper(), filename.split(os.sep)[-1]])
 		basename, _ = os.path.splitext(filename)

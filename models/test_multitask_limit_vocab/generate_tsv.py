@@ -26,16 +26,13 @@ if __name__ == '__main__':
 	folder = 'result'
 
 	for subfolder in os.listdir(folder):
-		out_name = 'statistics_noreg_{}.tsv'.format(subfolder)
+		out_name = 'statistics_{}.tsv'.format(subfolder)
 		result = []
 
-		for filename in listdir(os.path.join(folder,subfolder)):	
+		for filename in listdir(os.path.join(folder,subfolder), '.log'):	
 			l = extract_log(filename)
 
 			if filename.split(os.sep)[-2].startswith('multilayer') and filename.split(os.sep)[-1].split('_')[0]=='id':
-				continue
-
-			if filename.split(os.sep)[-1].split('_')[-2]!='reg0.0':
 				continue
 
 			filename = ' '.join([filename.split(os.sep)[-2].upper(), filename.split(os.sep)[-1]])

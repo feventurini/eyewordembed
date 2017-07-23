@@ -31,7 +31,7 @@ from eyetracking import *
 from eyetracking_batch_iter import *
 
 def inference(model_path, model_type='linreg', out_type='id', n_units=100, wlen=False, pos=False, n_pos_units=50):
-    vocab, pos2id, train, val, mean, std = pd.load_dataset()
+    vocab, pos2id, train, val, test, mean, std = pd.load_dataset()()
     n_vocab = len(vocab)
     n_pos = len(pos2id)
     loss_func = F.mean_squared_error
@@ -74,23 +74,20 @@ def inference(model_path, model_type='linreg', out_type='id', n_units=100, wlen=
         i = input('Insert word to test (CTRL-D to end):\t')
 
 
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', '-g', default=-1, type=int,
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--unit', '-u', default=100, type=int,
                         help='number of units')
-    parser.add_argument('--batchsize', '-b', type=int, default=1000,
+    parser.add_argument('--batchsize', '-batch', type=int, default=1000,
                         help='learning minibatch size')
     parser.add_argument('--epoch', '-e', default=20, type=int,
                         help='number of epochs to learn')
-    parser.add_argument('--model', '-m', choices=['linreg', 'multilayer', 'context', 'context_limited', 'multilayer_context', 'baseline'],
-                    default='linreg',
-                    help='model type ("linreg", "context")')
-    parser.add_argument('--window', '-w', default=1, type=int,
+    parser.add_argument('--window', '-w', default=0, type=int,
                     help='window size')
+    parser.add_argument('--layers', '-l', default=0, type=int,
+                    help='number of layers')
     parser.add_argument('--out-type', '-o', choices=['tanh', 'sigmoid', 'relu', 'id'],
                         default='id',
                         help='activation function type (tanh, sigmoid, relu, identity)')
@@ -105,6 +102,12 @@ if __name__ == '__main__':
     parser.add_argument( "-wlen", "-wl", 
                     required=False, action='store_true',
                     help="Add this option if you want the model to use the word length as input")
+    parser.add_argument( "-freq", "-f", 
+                    required=False, action='store_true',
+                    help="Add this option if you want the model to use the frequency as input")
+    parser.add_argument( "-bins", "-b", 
+                    required=False, action='store_true',
+                    help="Whether to use the classifier or linear regression")
     parser.add_argument('--out', default='result',
                         help='Directory to output the result')
 
@@ -123,20 +126,16 @@ if __name__ == '__main__':
     if args.gpu >= 0:
         cuda.get_device_from_id(args.gpu).use()
 
-    vocab, pos2id, train, val, mean, std = pd.load_dataset()
+    if args.bins:
+        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(bins=True)
+    else:
+        vocab, pos2id, train, val, test, mean, std = pd.load_dataset()
+    
+        print('')
+        print('Mean dataset times: {}'.format(mean))
+        print('Std_dev dataset times: {}'.format(std))
+
     index2word = {v:k for k,v in vocab.items()}
-
-
-    print('')
-    print('Mean dataset times: {}'.format(mean))
-    print('Std_dev dataset times: {}'.format(std))
-
-    # temp = [b[1] for b in train]
-    # print('Mean train times: {}'.format(np.mean(temp)))
-    # print('Std_dev train times: {}'.format(np.sqrt(np.var(temp))))
-    # temp = [b[1] for b in val]
-    # print('Mean validation times: {}'.format(np.mean(temp)))
-    # print('Std_dev validation times: {}'.format(np.sqrt(np.var(temp))))    
 
     n_vocab = len(vocab)
     n_pos = len(pos2id)
@@ -144,7 +143,10 @@ if __name__ == '__main__':
     print('data length: %d' % len(train))
     print('n_pos: %d' % n_pos)
 
-    loss_func = F.mean_squared_error
+    if args.bins:
+        loss_func = F.softmax_cross_entropy
+    else:
+        loss_func = F.mean_squared_error
 
     if args.out_type == 'tanh':
         out = F.tanh
@@ -157,42 +159,22 @@ if __name__ == '__main__':
     else:
         raise Exception('Unknown output type: {}'.format(args.out_type))
 
-
     batch_size = args.batchsize
     n_units = args.unit
     window = args.window
 
-    if args.model == 'linreg':
-        model = LinReg(n_vocab, n_units, loss_func, out, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-    elif args.model == 'multilayer':
-        model = Multilayer(n_vocab, n_units, loss_func, out, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, n_layers=1, n_hidden=50, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-    elif args.model == 'context':
-        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-    elif args.model == 'context_limited':
-        model = LinRegContextConcatLimited(n_vocab, n_units, loss_func, out, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingWindowIteratorLimited(train, window, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-        val_iter = EyeTrackingWindowIteratorLimited(val, window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-    elif args.model == 'multilayer_context':
-        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, n_pos=n_pos, n_pos_units=50)
-        train_iter = EyeTrackingWindowIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-        val_iter = EyeTrackingWindowIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix)
-    elif args.model == 'baseline':
-        model = Baseline(0.0, loss_func)
-        train_iter = EyeTrackingSerialIterator(train, batch_size, repeat=True, shuffle=True)
-        val_iter = EyeTrackingSerialIterator(val, batch_size, repeat=False, shuffle=True)
+    if args.bins:
+        model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, n_pos=n_pos, n_pos_units=50)
     else:
-        raise Exception('Unknown model type: {}'.format(args.model))
+        model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, n_pos=n_pos, n_pos_units=50)
+
+    train_iter = EyetrackingBatchIterator(train, args.window, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, bins=args.bins)
+    val_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, bins=args.bins)
 
     if args.gpu >= 0:
         model.to_gpu()
 
-    optimizer = O.Adam(0.01)
+    optimizer = O.AdaGrad(0.01)
     optimizer.setup(model)
     l2_reg = chainer.optimizer.WeightDecay(args.reg_coeff)
     optimizer.add_hook(l2_reg, 'l2')
@@ -203,10 +185,37 @@ if __name__ == '__main__':
     trainer.extend(extensions.Evaluator(val_iter, model, converter=convert, device=args.gpu))
 
     trainer.extend(extensions.LogReport(log_name='log_' + str(args.unit) + '_' + args.out_type))
-    trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
 
+    if args.bins:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
+    else:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+
+    trainer.extend(extensions.dump_graph('main/loss', out_name='test_cg.dot'))
     trainer.extend(extensions.ProgressBar())
     trainer.run()
+
+
+    if not args.bins:
+        from sklearn.metrics import r2_score
+
+        test_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, bins=args.bins)
+        test_set = list(test_iter.next())
+        for t in test_iter:
+            x, y = t
+            for i in x:
+                test_set[0][i] = np.concatenate((test_set[0][i],x[i]), axis=0)
+            test_set[1] = np.concatenate((test_set[1],y), axis=0)
+
+        test_set = convert(tuple(test_set), args.gpu)
+        inputs, target = test_set
+        predictions = model.inference(inputs)
+        target = std*target + mean
+        predictions = std*predictions + mean
+        # for t, i in zip(target, predictions):
+        #     print(t, i)
+        r2 = r2_score(target, predictions)
+        print('R_squared coefficient: {}'.format(r2))
 
     # name = 'eyetracking_' + str(args.unit) + '_' + args.out_type
     # with open(os.path.join(args.out, name + '.w'), 'w') as f:

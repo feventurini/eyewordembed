@@ -137,19 +137,29 @@ class DundeeTreebankParser():
 
 
 
-wantedSet = ['First_pass_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS']
-wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'WNUM':float, 'UniversalPOS':str, 'CPOS':str}
+if __name__ == '__main__':
+	avg = False
 
-csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok_gr.csv'
-save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed_gr/'
+	if avg:
+		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 'n-1_fix_dur']
+		wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'WNUM':float, 'UniversalPOS':str, 'CPOS':str, 'BNC_freq':float_or_blank_cast, 'First_fix_dur':float_or_blank_cast, 'n-1_fix_dur':float_or_blank_cast}
+		csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok_gr.csv'
+		save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed_gr/'
 
-if not os.path.isdir(save_dir):
-	os.makedirs(save_dir)
+	else:
+		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 'n-1_fix_dur', 'Participant']
+		wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'WNUM':float, 'UniversalPOS':str, 'CPOS':str, 'First_fix_dur':float_or_blank_cast, 'BNC_freq':float_or_blank_cast, 'n-1_fix_dur':float_or_blank_cast, 'Participant':str}
+		csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok.csv'
+		save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed/'
 
-dtp = DundeeTreebankParser()
-result = dtp.parseFile(csv_path, wantedSet, wantedParsing)
+	if not os.path.isdir(save_dir):
+		os.makedirs(save_dir)
+
+	dtp = DundeeTreebankParser()
+	result = dtp.parseFile(csv_path, wantedSet, wantedParsing)
 
 
-for k,v in result.items():
-	util.save(v, os.path.join(save_dir,k))
-dtp.fileToText(csv_path, os.path.join(save_dir,'dundee.txt'))
+	for k,v in result.items():
+		util.save(v, os.path.join(save_dir,k))
+	dtp.fileToText(csv_path, os.path.join(save_dir,'dundee.txt'))
+

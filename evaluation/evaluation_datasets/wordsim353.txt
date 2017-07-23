@@ -1,4 +1,3 @@
-# word1	word2	SimLex999
 love	sex	6.77
 tiger	cat	7.35
 tiger	tiger	10.00
@@ -21,7 +20,7 @@ smart	stupid	5.81
 company	stock	7.08
 stock	market	8.08
 stock	phone	1.62
-stock	CD	1.31
+stock	cd	1.31
 stock	jaguar	0.92
 stock	egg	1.81
 fertility	egg	6.69
@@ -36,18 +35,18 @@ king	cabbage	0.23
 king	queen	8.58
 king	rook	5.92
 bishop	rabbi	6.69
-Jerusalem	Israel	8.46
-Jerusalem	Palestinian	7.65
+jerusalem	israel	8.46
+jerusalem	palestinian	7.65
 holy	sex	1.62
 fuck	sex	9.44
-Maradona	football	8.62
+maradona	football	8.62
 football	soccer	9.03
 football	basketball	6.81
 football	tennis	6.63
 tennis	racket	7.56
-Arafat	peace	6.73
-Arafat	terror	7.65
-Arafat	Jackson	2.50
+arafat	peace	6.73
+arafat	terror	7.65
+arafat	jackson	2.50
 law	lawyer	8.38
 movie	star	7.38
 movie	popcorn	6.19
@@ -119,7 +118,7 @@ psychology	fear	6.85
 psychology	depression	7.42
 psychology	clinic	6.58
 psychology	doctor	6.42
-psychology	Freud	8.21
+psychology	freud	8.21
 psychology	mind	7.69
 psychology	health	7.23
 psychology	science	6.71
@@ -156,18 +155,18 @@ secretary	senate	5.06
 energy	laboratory	5.09
 computer	laboratory	6.78
 weapon	secret	6.06
-FBI	fingerprint	6.94
-FBI	investigation	8.31
+fbi	fingerprint	6.94
+fbi	investigation	8.31
 investigation	effort	4.59
-Mars	water	2.94
-Mars	scientist	5.63
+mars	water	2.94
+mars	scientist	5.63
 news	report	8.16
 canyon	landscape	7.53
 image	surface	4.56
 discovery	space	6.34
 water	seepage	6.56
 sign	recess	2.38
-Wednesday	news	2.22
+wednesday	news	2.22
 mile	kilometer	8.66
 computer	news	4.47
 territory	surface	5.34
@@ -176,7 +175,7 @@ president	medal	3.00
 war	troops	8.13
 record	number	6.31
 skin	eye	6.22
-Japanese	American	6.50
+japanese	american	6.50
 theater	history	3.91
 volunteer	motto	2.56
 prejudice	recognition	3.00
@@ -207,7 +206,7 @@ school	center	3.44
 reason	hypertension	2.31
 reason	criterion	5.91
 hundred	percent	7.38
-Harvard	Yale	8.13
+harvard	yale	8.13
 hospital	infrastructure	4.63
 death	row	5.25
 death	inmate	5.03
@@ -217,7 +216,7 @@ life	term	4.50
 word	similarity	4.75
 board	recommendation	4.47
 governor	interview	3.25
-OPEC	country	5.63
+opec	country	5.63
 peace	atmosphere	3.69
 peace	insurance	2.94
 territory	kilometer	5.28
@@ -257,7 +256,7 @@ dividend	payment	7.63
 dividend	calculation	6.48
 calculation	computation	8.44
 currency	market	7.50
-OPEC	oil	8.59
+opec	oil	8.59
 oil	stock	6.34
 announcement	production	3.38
 announcement	warning	6.00
@@ -319,7 +318,7 @@ possibility	girl	1.94
 population	development	3.75
 morality	importance	3.31
 morality	marriage	3.69
-Mexico	Brazil	7.44
+mexico	brazil	7.44
 gender	equality	6.41
 change	attitude	5.44
 family	planning	6.25

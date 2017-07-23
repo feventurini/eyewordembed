@@ -8,7 +8,7 @@ from queue import Queue
 import threading
 from gensim import utils
 
-class BatchIterator(object):
+class MultitaskBatchIterator(object):
 
     def __init__(self, sentences, epochs, total_examples, batch_size=10000, maxsize=5):
         self.sentences = sentences
@@ -51,7 +51,7 @@ class BatchIterator(object):
 #     train_tarball = '../dataset/dundee.txt'
 #     import gensim
 #     sent = utils.RepeatCorpusNTimes(gensim.models.word2vec.LineSentence(train_tarball), 5).__iter__()
-#     ite = BatchIterator(gensim.models.word2vec.LineSentence(train_tarball), 5, 1000)
+#     ite = MultitaskBatchIterator(gensim.models.word2vec.LineSentence(train_tarball), 5, 1000)
 
 #     batch = ite.next()
 #     while batch:

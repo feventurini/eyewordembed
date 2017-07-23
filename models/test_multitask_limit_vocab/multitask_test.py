@@ -74,6 +74,22 @@ if __name__ == '__main__':
 
     n = 10
     tarball_folder = '../dataset/downsampled_gigaword'
+    dundee = '../dataset/dundee.txt'
+
+    model_w2v = ['skipgram', 'cbow']
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(7,n)]
+    model_types = ['linreg']
+    rule_name = {O.AdaGrad: 'adagrad'}
+    rules = [O.AdaGrad]
+    lrs = [0.001, 0.01]
+    wlen = True
+    pos = True
+    prev_fix = True
+    outs = ['tanh', 'id']
+    reg_coeffs = [0.0, 0.001]
+    loss_ratios = [1.0, 0.1, 0.01]
+
+    configurations = []
 
     binss = [True, False]
     model_w2v = ['skipgram']
@@ -122,7 +138,7 @@ if __name__ == '__main__':
     else:
         raise Exception('Unknown model type: {}'.format(model))
 
-    out_folder = os.path.join('test_multitask/result', tarball.split('.')[0], model_word2vec)
+    out_folder = os.path.join('test_multitask_limit_vocab/result', tarball.split('.')[0], model_word2vec)
     train_tarball = os.path.join(tarball_folder, tarball)
 
     k = tarball.split('.')[0].split('_')[-1]
@@ -143,40 +159,44 @@ if __name__ == '__main__':
     else:
         raise Exception('Unknown output type: {}'.format(out_type))
 
-    sentences = gensim.models.word2vec.LineSentence(train_tarball)
+    dundee = '../dataset/dundee.txt'
+    sentences = gensim.models.word2vec.LineSentence(dundee)
 
-    model = gensim.models.word2vec.Word2Vec(sentences=None, size=n_units, alpha=alpha, window=window, min_count=min_count, max_vocab_size=max_vocab_size, 
+    model = gensim.models.word2vec.Word2Vec(sentences=None, size=n_units, alpha=alpha, window=window, min_count=0, max_vocab_size=max_vocab_size, 
     sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, 
-    iter=epoch, null_word=0, trim_rule=None, sorted_vocab=1)
+    iter=epoch, null_word=0, trim_rule=None, sorted_vocab=1, batch_words=10000)
 
     if not os.path.isdir(out_folder):
         os.makedirs(out_folder)
     if not os.path.isdir(vocab_folder):
         os.makedirs(vocab_folder)
 
-    if os.path.isfile(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"):
-        model.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
+    if os.path.isfile(vocab_folder + os.sep + "init_vocab_" + os.path.basename(dundee) + ".model"):
+        model.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(dundee) + ".model"))
     else:
         logging.info("Building vocab...")
         model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
         logging.info("Vocabulary built")
         logging.info("Saving initial model with built vocabulary...")
-        model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model")
-
+        model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(dundee) + ".model")
 
     if bins:
-        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(model.wv.vocab, gensim=True, bins=True)
+        vocab, pos2id, n_classes, n_participants, train, val = pd.load_dataset(model.wv.vocab, gensim=True, bins=True)
     else:
         vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True)
 
+    model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
+    model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
+    sentences = gensim.models.word2vec.LineSentence(train_tarball)
+
     print('Data samples eyetracking: %d' % len(train))
-    print('Data samples word2vec:\t%d' % model.corpus_count)
+    print('Data samples word2vec:\t%d' % model_2.corpus_count)
 
     b = np.ceil(len(train)/float(batchsize_eyetracking))
-    batchsize_word2vec = int(np.floor(model.corpus_count/b))
+    batchsize_word2vec = int(np.floor(model_2.corpus_count/b))
     model.batch_words = np.ceil(batchsize_word2vec/10)
 
-    word2vec_iter = MultitaskBatchIterator(sentences, int(epoch*epoch_ratio), model.corpus_count, batchsize_word2vec)
+    word2vec_iter = MultitaskBatchIterator(sentences, int(epoch*epoch_ratio), model_2.corpus_count, batchsize_word2vec)
     train_iter = EyetrackingBatchIterator(train, window_eyetracking, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
     val_iter = EyetrackingBatchIterator(val, window_eyetracking, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
 
@@ -191,6 +211,7 @@ if __name__ == '__main__':
 
     n_vocab = len(model.wv.vocab)
     n_pos = len(pos2id)
+    #print(model.wv.vocab['the'].index)
 
     if bins:
         model_eyetracking = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
@@ -210,16 +231,18 @@ if __name__ == '__main__':
 
     trainer.extend(extensions.Evaluator(val_iter, model_eyetracking, converter=convert, device=gpu))
 
-    trainer.extend(extensions.LogReport(log_name=name + '.log'))
-    trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+    trainer.extend(extensions.LogReport(log_name='log_' + str(n_units) + '_' + out_type_eyetracking))
 
-    w2v_e = Word2VecExtension(word2vec_iter, model_eyetracking, model)
+    if bins:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
+    else:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+
+    w2v_e = Word2VecExtension(word2vec_iter, model_eyetracking, model, epoch_ratio=epoch_ratio)
     trainer.extend(w2v_e)
 
     trainer.extend(ProgressBarWord2Vec(w2v_e, update_interval=1))
 
     trainer.run()
 
-    # model.save(out_folder + os.sep + 'multitask_gigaword_' + str(n_units) + 'units_' + model_word2vec + '_' + model_eyetracking_inference  + '_' + 
-    #     str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.model')
-    model.save(out_folder + os.sep + '{}.model'.format(name))
+    model.save(out_folder + os.sep + 'limit_vocab_{}.model'.format(name))

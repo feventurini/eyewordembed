@@ -4,8 +4,127 @@ import chainer.initializers as I
 import chainer.links as L
 import chainer.optimizers as O
 from chainer import reporter
+import numpy as np
 
-class Baseline(chainer.Chain):
+def toOneHot(n, n_participants):
+    res = np.eye(n_participants, dtype=np.float32)[n]
+    return res
+
+class BaselineClassifier(chainer.Chain):
+    def __init__(self, mean, loss_func):
+        super(Baseline, self).__init__()
+        self.loss_func = loss_func
+        self.mean = mean
+
+    def __call__(self, inputs, target):
+        o = np.full(target.shape, self.mean, dtype=np.float32)
+        loss = self.loss_func(o, target)
+        acc = F.accuracy(F.softmax(o), target)
+        reporter.report({'loss': loss}, self)
+        reporter.report({'accuracy':acc}, self)
+        return loss        
+
+class EyetrackingClassifier(chainer.Chain):
+
+    def __init__(self, n_vocab, n_units, n_participants, n_classes, loss_func, out, n_layers=0, window=0, wlen=False, pos=False, prev_fix=False, freq=False, n_pos=None, n_hidden=200, n_pos_units=50, loss_ratio=1.0):
+        super(EyetrackingClassifier, self).__init__()
+
+        self.n_units = n_units
+        self.n_pos_units = n_pos_units
+        self.pos = pos
+        self.wlen = wlen
+        self.prev_fix = prev_fix
+        self.freq = freq
+        self.loss_ratio = loss_ratio
+        self.n_participants = n_participants
+        self.n_layers = n_layers
+
+        with self.init_scope():
+            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
+
+            n_inputs = n_units
+            if self.pos: 
+                assert(n_pos)
+                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                n_inputs += n_pos_units
+
+            if self.prev_fix:
+                n_inputs += n_participants
+            
+            if self.wlen:
+                n_inputs += 1
+
+            if self.freq:
+                n_inputs += 1
+            
+            n_inputs *= (window + 1)
+            
+            if n_layers > 0:
+                self.layer0 = L.Linear(n_inputs, n_hidden, initialW=I.Uniform(1. / n_hidden))
+                for i in range(1, n_layers):
+                    setattr(self, 'layer{}'.format(i), L.Linear(n_hidden, n_hidden, initialW=I.Uniform(1. / n_hidden)))
+                self.outlayer = L.Linear(n_hidden, n_classes, initialW=I.Uniform(1. / n_hidden))
+            else:
+                self.outlayer = L.Linear(n_inputs, n_classes, initialW=I.Uniform(1. / n_inputs))
+ 
+            self.out = out
+            self.loss_func = loss_func
+
+    def _embed_input(self, inputs):
+        variables = []
+
+        w = chainer.Variable(inputs['words'], name='words')
+        e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+        variables.append(e_w)
+
+        if self.pos:
+            p = chainer.Variable(inputs['pos'], name='pos_tags')
+            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
+            e_p.name = 'pos_embeddings'
+            variables.append(e_p)
+
+        if self.wlen:
+            l = chainer.Variable(inputs['wlen'], name='word_lengths')
+            variables.append(l)
+
+        if self.prev_fix:
+            t = chainer.Variable(toOneHot(inputs['prev_fix'], self.n_participants), name='previous_fixations')
+            t = F.reshape(t, (-1, w.shape[1]*self.n_participants))
+            t.name = 'previous_fixations'
+            variables.append(t)
+
+        if self.freq:
+            f = chainer.Variable(inputs['freq'], name='frequency')
+            variables.append(f)
+
+        h = F.concat(tuple(variables), axis=1)# * (1. / w.shape[1])
+
+        h.name = 'concatenated_word_embeddings'
+        return h
+
+    def __call__(self, inputs, target):
+        target = chainer.Variable(target, name='target')
+        h = self._embed_input(inputs) # called from superclass
+        for i in range(self.n_layers):
+            h = self.out(getattr(self,'layer{}'.format(i))(h))
+        o = self.outlayer(h)
+        o.name = 'output_time_prediction'
+
+        loss = self.loss_func(o, target)
+        acc = F.accuracy(F.softmax(o), target)
+        reporter.report({'loss': loss}, self)
+        reporter.report({'accuracy':acc}, self)
+        return self.loss_ratio * loss
+
+    def inference(self, inputs):
+        h = self._embed_input(inputs) # called from superclass
+        for i in range(self.n_layers):
+            h = self.out(getattr(self,'layer{}'.format(i))(h))
+        o = self.outlayer(h)
+        return F.softmax(o)
+
+
+class BaselineLinreg(chainer.Chain):
     def __init__(self, mean, loss_func):
         super(Baseline, self).__init__()
         self.loss_func = loss_func
@@ -16,754 +135,106 @@ class Baseline(chainer.Chain):
         reporter.report({'loss': loss}, self)
         return loss        
 
-class LinReg(chainer.Chain):
+class EyetrackingLinreg(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
-        super(LinReg, self).__init__()
-
-        self.pos = pos
-        self.wlen = wlen
-        self.prev_fix = prev_fix
-        self.loss_ratio = loss_ratio
-
-        with self.init_scope():
-            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
-
-            if self.pos and self.wlen and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 2
-
-            elif self.pos and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
-            
-            elif self.wlen and self.prev_fix:
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + 2 
-            
-            elif self.pos and self.wlen:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
-            
-            elif self.wlen:
-                n_inputs = n_units + 1
-            
-            elif self.prev_fix:
-                n_inputs = n_units + 1
-            
-            elif self.pos:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units
-            
-            else:
-                n_inputs = n_units
-
-            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))            
-            self.out = out
-            self.loss_func = loss_func
-
-    def _embed_input(self, inputs):
-        if self.pos and self.wlen and self.prev_fix:
-            w, l, p, t = inputs
-            w = chainer.Variable(w, name='word')
-            p = chainer.Variable(p, name='pos_tag')
-            l = chainer.Variable(l, name='word_length')
-            t = chainer.Variable(t, name='previous_fixation')
-
-            e_w = self.embed(w)
-            e_p = self.embed_pos(p)
-            l = F.reshape(l,(-1,1,1))
-            t = F.reshape(t,(-1,1,1))
-            h = F.concat((e_w, e_p, l, t), axis=2)
-
-            t.name = 'previous_fixation'
-            l.name = 'word_length'
-            e_p.name = 'pos_embedding'
-
-        elif self.pos and self.wlen:
-            w, l, p = inputs
-            w = chainer.Variable(w, name='word')
-            p = chainer.Variable(p, name='pos_tag')
-            l = chainer.Variable(l, name='word_length')
-
-            e_w = self.embed(w)
-            e_p = self.embed_pos(p)
-            l = F.reshape(l,(-1,1,1))
-            h = F.concat((e_w, e_p, l), axis=2)
-
-            l.name = 'word_length'
-            e_p.name = 'pos_embedding'
-
-        elif self.pos and self.prev_fix:
-            w, p, t = inputs
-            w = chainer.Variable(w, name='word')
-            p = chainer.Variable(p, name='pos_tag')
-            t = chainer.Variable(t, name='previous_fixation')
-
-            e_w = self.embed(w)
-            e_p = self.embed_pos(p)
-            t = F.reshape(t,(-1,1,1))
-            h = F.concat((e_w, e_p, t), axis=2)
-
-            t.name = 'previous_fixation'
-            e_p.name = 'pos_embedding'
-
-        elif self.prev_fix and self.wlen:
-            w, l, t = inputs
-            w = chainer.Variable(w, name='word')
-            l = chainer.Variable(l, name='word_length')
-            t = chainer.Variable(t, name='previous_fixation')
-
-            e_w = self.embed(w)
-            l = F.reshape(l,(-1,1,1))
-            t = F.reshape(t,(-1,1,1))
-            h = F.concat((e_w, l, t), axis=2)
-
-            l.name = 'word_length'
-            t.name = 'previous_fixation'
-
-        elif self.pos:
-            w, p = inputs
-            w = chainer.Variable(w, name='word')
-            p = chainer.Variable(p, name='pos_tag')
-
-            e_w = self.embed(w)
-            e_p = self.embed_pos(p)
-            h = F.concat((e_w, e_p), axis=2)
-
-            e_p.name = 'pos_embedding'
-
-        elif self.wlen:
-            w, l = inputs
-
-            w = chainer.Variable(w, name='word')
-            l = chainer.Variable(l, name='word_length')
-
-            e_w = self.embed(w)
-            l = F.reshape(l,(-1,1,1))
-            h = F.concat((e_w, l), axis=2)
-
-            l.name = 'word_length'
-
-        elif self.prev_fix:
-            w, t = inputs
-
-            w = chainer.Variable(w, name='word')
-            t = chainer.Variable(t, name='previous_fixation')
-
-            e_w = self.embed(w)
-            t = F.reshape(t,(-1,1,1))
-            h = F.concat((e_w, t), axis=2)
-
-            t.name = 'previous_fixation'
-
-        else:
-            if isinstance(inputs, tuple):
-                w = inputs[0]
-            else:
-                w = inputs
-            h = self.embed(w)
-
-        h.name = 'word_embedding'
-        return h
-
-    def __call__(self, inputs, target):
-        target = chainer.Variable(target, name='target')
-        h = self._embed_input(inputs)
-        o = self.out(self.lin(h))
-        o.name = 'output_time_prediction'
-        loss = self.loss_func(o, target)
-        reporter.report({'loss': loss}, self)
-        return self.loss_ratio * loss
-
-    def inference(self, inputs):
-        h = self._embed_input(inputs)
-        return self.out(self.lin(h))
-
-class Multilayer(LinReg):
-
-    def __init__(self, n_vocab, n_units, loss_func, out, n_hidden=50, n_layers=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
-        super(LinReg, self).__init__()
-
-        self.pos = pos
-        self.wlen = wlen
-        self.prev_fix = prev_fix
-        self.loss_ratio = loss_ratio
-
-        with self.init_scope():
-            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
-
-            if self.pos and self.wlen and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 2
-
-            elif self.pos and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
-            
-            elif self.wlen and self.prev_fix:
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + 2 
-            
-            elif self.pos and self.wlen:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
-            
-            elif self.wlen:
-                n_inputs = n_units + 1
-            
-            elif self.prev_fix:
-                n_inputs = n_units + 1
-            
-            elif self.pos:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units
-            
-            else:
-                n_inputs = n_units
-
-            self.lin = L.Linear(n_inputs, n_hidden, initialW=I.Uniform(1. / n_inputs))
-            
-            self.layers = list()
-            for i in range(n_layers - 1):
-                self.layers.append(L.Linear(n_hidden, n_hidden, initialW=I.Uniform(1. / n_units)))
-            self.layers.append(L.Linear(n_hidden, 1, initialW=I.Uniform(1. / n_units)))
-            
-            self.out = out
-            self.loss_func = loss_func
-
-    def __call__(self, inputs, target):
-        target = chainer.Variable(target, name='target')
-        i = (self._embed_input(inputs)) # called from superclass
-        h = self.out(self.lin(i))
-        for l in self.layers:
-            h = self.out(l(h))
-
-        h.name = 'output_time_prediction'
-        loss = self.loss_func(h, target)
-        reporter.report({'loss': loss}, self)
-        return self.loss_ratio * loss
-
-    def inference(self, inputs):
-        i = (self._embed_input(inputs)) # called from superclass
-        h = self.out(self.lin(i))
-        for l in self.layers:
-            h = self.out(l(h))
-        return h
-
-@DeprecationWarning
-class LinRegContextSum(chainer.Chain):
-
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
-        super(LinRegContextSum, self).__init__()
-
-        self.pos = pos
-        self.wlen = wlen
-
-        with self.init_scope():
-            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
-
-            if self.pos and self.wlen:
-                assert(n_pos)
-                n_inputs = n_units + n_pos_units + 1
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-
-            elif self.wlen:
-                n_inputs = n_units + 1
-            
-            elif self.pos:
-                n_inputs = n_units + n_pos_units
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-            
-            else:
-                n_inputs = n_units
-
-            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
-            self.out = out
-            self.loss_func = loss_func
-
-    def _embed_input(self, inputs):
-        if self.pos and self.wlen:
-            w, l, p = inputs
-
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-
-            e_w = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
-            e_p = F.sum(self.embed_pos(p), axis=1) * (1. / p.shape[1])
-            l = F.mean(l, axis=1).reshape(-1,1) #F.reshape(l,(-1,w.shape[1]))
-            h = F.concat((e_w, e_p, l), axis=1)
-
-            l.name = 'word_lengths_window'
-            e_p.name = 'pos_embeddings'
-
-        elif self.pos:
-            w, p = inputs
-
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-
-            e_w = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
-            e_p = F.sum(self.embed_pos(p), axis=1) * (1. / p.shape[1])
-            h = F.concat((e_w, e_p), axis=1)
-
-            e_p.name = 'pos_embeddings'
-
-        elif self.wlen:
-            w, l = inputs
-
-            w = chainer.Variable(w, name='words_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-
-            e_w = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
-            l = F.mean(l, axis=1).reshape(-1,1) #F.reshape(l,(-1,w.shape[1]))
-            h = F.concat((e_w, l), axis=1)
-
-            l.name = 'word_lengths_window'
-
-        else:
-            if isinstance(inputs, tuple):
-                w = inputs[0]
-            else:
-                w = inputs
-            h = F.sum(self.embed(w), axis=1) * (1. / w.shape[1])
-
-        h.name = 'word_embeddings'
-
-        return h
-
-    def __call__(self, inputs, target):
-        target = chainer.Variable(target, name='target')
-        h = self._embed_input(inputs)
-        o = self.out(self.lin(h))
-        o.name = 'output_time_prediction'
-        loss = self.loss_func(o, target)
-        reporter.report({'loss': loss}, self)
-        return self.loss_ratio * loss
-
-    def inference(self, inputs):
-        h = self._embed_input(inputs)
-        return self.out(self.lin(h))
-
-class LinRegContextConcat(chainer.Chain):
-
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
-        super(LinRegContextConcat, self).__init__()
+    def __init__(self, n_vocab, n_units, loss_func, out, window=0, n_layers=0, n_hidden=200, wlen=False, pos=False, prev_fix=False, freq=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
+        super(EyetrackingLinreg, self).__init__()
 
         self.n_units = n_units
         self.n_pos_units = n_pos_units
         self.pos = pos
         self.wlen = wlen
         self.prev_fix = prev_fix
+        self.freq = freq
         self.loss_ratio = loss_ratio
+        self.n_layers = n_layers
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
 
-            if self.pos and self.wlen and self.prev_fix:
+            n_inputs = n_units
+            if self.pos: 
                 assert(n_pos)
                 self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 2
+                n_inputs += n_pos_units
 
-            elif self.pos and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
+            if self.prev_fix:
+                n_inputs += 1
             
-            elif self.wlen and self.prev_fix:
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + 2 
-            
-            elif self.pos and self.wlen:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
-            
-            elif self.wlen:
-                n_inputs = n_units + 1
-            
-            elif self.prev_fix:
-                n_inputs = n_units + 1
-            
-            elif self.pos:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units
-            
-            else:
-                n_inputs = n_units
+            if self.wlen:
+                n_inputs += 1
 
+            if self.freq:
+                n_inputs += 1
+            
             n_inputs *= (window + 1)
-            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
+
+            if n_layers > 0:
+                self.layer0 = L.Linear(n_inputs, n_hidden, initialW=I.Uniform(1. / n_hidden))
+                for i in range(1, n_layers):
+                    setattr(self, 'layer{}'.format(i), L.Linear(n_hidden, n_hidden, initialW=I.Uniform(1. / n_hidden)))
+                self.outlayer = L.Linear(n_hidden, 1, initialW=I.Uniform(1. / n_hidden))
+            else:
+                self.outlayer = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
+ 
             self.out = out
             self.loss_func = loss_func
 
     def _embed_input(self, inputs):
-        if self.pos and self.wlen and self.prev_fix:
-            w, l, p, t = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
+        variables = []
 
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+        w = chainer.Variable(inputs['words'], name='words')
+        e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+        variables.append(e_w)
+
+        if self.pos:
+            p = chainer.Variable(inputs['pos'], name='pos_tags')
             e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
-            h = F.concat((e_w, e_p, l, t), axis=1)# * (1. / w.shape[1])
-
-            l.name = 'word_lengths_window'
             e_p.name = 'pos_embeddings'
-            t.name = 'previous_fixations_window'
+            variables.append(e_p)
 
-        elif self.pos and self.wlen:
-            w, l, p = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-            l = chainer.Variable(l, name='word_lengths_window')
+        if self.wlen:
+            l = chainer.Variable(inputs['wlen'], name='word_lengths')
+            variables.append(l)
 
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
-            h = F.concat((e_w, e_p, l), axis=1)# * (1. / w.shape[1])
+        if self.prev_fix:
+            t = chainer.Variable(inputs['prev_fix'], name='previous_fixations')
+            t.name = 'previous_fixations'
+            variables.append(t)
 
-            l.name = 'word_lengths_window'
-            e_p.name = 'pos_embeddings'
+        if self.freq:
+            f = chainer.Variable(inputs['freq'], name='frequency')
+            variables.append(f)
 
-        elif self.pos and self.prev_fix:
-            w, p, t = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
-            h = F.concat((e_w, e_p, t), axis=1)# * (1. / w.shape[1])
-
-            t.name = 'previous_fixations_window'
-            e_p.name = 'pos_embeddings'
-
-        elif self.wlen and self.prev_fix:
-            w, l, p = inputs
-            w = chainer.Variable(w, name='words_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            h = F.concat((e_w, l, t), axis=1)# * (1. / w.shape[1])
-
-            t.name = 'previous_fixations_window'
-            l.name = 'word_lengths_window'
-
-        elif self.pos:
-            w, p = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
-            h = F.concat((e_w, e_p), axis=1)
-
-            e_p.name = 'pos_embeddings'
-
-        elif self.wlen:
-            w, l = inputs
-            w = chainer.Variable(w, name='words_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            h = F.concat((e_w, l), axis=1)
-
-            l.name = 'word_lengths_window'
-
-        elif self.prev_fix:
-            w, t = inputs
-            w = chainer.Variable(w, name='words_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            h = F.concat((e_w, t), axis=1)
-
-            t.name = 'previous_fixations_window'
-
-        else:
-            if isinstance(inputs, tuple):
-                w = inputs[0]
-            else:
-                w = inputs
-
-            w = chainer.Variable(w, name='word')
-            h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
+        h = F.concat(tuple(variables), axis=1)# * (1. / w.shape[1])
 
         h.name = 'concatenated_word_embeddings'
         return h
 
     def __call__(self, inputs, target):
         target = chainer.Variable(target, name='target')
-        h = self._embed_input(inputs)
-        o = self.out(self.lin(h))
+        h = self._embed_input(inputs) # called from superclass
+        for i in range(self.n_layers):
+            h = self.out(getattr(self,'layer{}'.format(i))(h))
+        o = self.out(self.outlayer(h))
         o.name = 'output_time_prediction'
+
         loss = self.loss_func(o, target)
         reporter.report({'loss': loss}, self)
         return self.loss_ratio * loss
 
     def inference(self, inputs):
-        h = self._embed_input(inputs)
-        return self.out(self.lin(h))
-
-class LinRegContextConcatLimited(chainer.Chain):
-
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
-        super(LinRegContextConcatLimited, self).__init__()
-
-        self.n_units = n_units
-        self.n_pos_units = n_pos_units
-        self.pos = pos
-        self.wlen = wlen
-        self.prev_fix = prev_fix
-        self.loss_ratio = loss_ratio
-
-        with self.init_scope():
-            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
-
-            if self.pos and self.wlen and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = (n_units)*(window + 1) + n_pos_units + 2
-
-            elif self.pos and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = (n_units)*(window + 1) + n_pos_units + 1 
-            
-            elif self.wlen and self.prev_fix:
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = (n_units)*(window + 1) + 1
-            
-            elif self.pos and self.wlen:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = (n_units)*(window + 1) + n_pos_units + 1 
-            
-            elif self.wlen:
-                n_inputs = (n_units)*(window + 1) + 1
-            
-            elif self.prev_fix:
-                n_inputs = (n_units)*(window + 1) + 1
-            
-            elif self.pos:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = (n_units)*(window + 1) + n_pos_units
-            
-            else:
-                n_inputs = (n_units)*(window + 1)
-
-            self.lin = L.Linear(n_inputs, 1, initialW=I.Uniform(1. / n_inputs))
-            self.out = out
-            self.loss_func = loss_func
-
-    def _embed_input(self, inputs):
-        if self.pos and self.wlen and self.prev_fix:
-            w, l, p, t = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
-            h = F.concat((e_w, e_p, l, t), axis=1)# * (1. / w.shape[1])
-
-            l.name = 'word_lengths_window'
-            e_p.name = 'pos_embeddings'
-            t.name = 'previous_fixations_window'
-
-        elif self.pos and self.wlen:
-            w, l, p = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
-            h = F.concat((e_w, e_p, l), axis=1)# * (1. / w.shape[1])
-
-            l.name = 'word_lengths_window'
-            e_p.name = 'pos_embeddings'
-
-        elif self.pos and self.prev_fix:
-            w, p, t = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
-            h = F.concat((e_w, e_p, t), axis=1)# * (1. / w.shape[1])
-
-            t.name = 'previous_fixations_window'
-            e_p.name = 'pos_embeddings'
-
-        elif self.wlen and self.prev_fix:
-            w, l, p = inputs
-            w = chainer.Variable(w, name='words_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            h = F.concat((e_w, l, t), axis=1)# * (1. / w.shape[1])
-
-            t.name = 'previous_fixations_window'
-            l.name = 'word_lengths_window'
-
-        elif self.pos:
-            w, p = inputs
-            w = chainer.Variable(w, name='words_window')
-            p = chainer.Variable(p, name='pos_tags_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            e_p = F.reshape(self.embed_pos(p), (-1,self.n_pos_units))
-            h = F.concat((e_w, e_p), axis=1)
-
-            e_p.name = 'pos_embeddings'
-
-        elif self.wlen:
-            w, l = inputs
-            w = chainer.Variable(w, name='words_window')
-            l = chainer.Variable(l, name='word_lengths_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            h = F.concat((e_w, l), axis=1)
-
-            l.name = 'word_lengths_window'
-
-        elif self.prev_fix:
-            w, t = inputs
-            w = chainer.Variable(w, name='words_window')
-            t = chainer.Variable(t, name='previous_fixations_window')
-
-            e_w = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-            h = F.concat((e_w, t), axis=1)
-
-            t.name = 'previous_fixations_window'
-
-        else:
-            if isinstance(inputs, tuple):
-                w = inputs[0]
-            else:
-                w = inputs
-
-            w = chainer.Variable(w, name='word')
-            h = F.reshape(self.embed(w), (-1,w.shape[1]*self.n_units))
-
-        h.name = 'concatenated_word_embeddings'
-        return h
-
-    def __call__(self, inputs, target):
-        target = chainer.Variable(target, name='target')
-        h = self._embed_input(inputs)
-        o = self.out(self.lin(h))
-        o.name = 'output_time_prediction'
-        loss = self.loss_func(o, target)
-        reporter.report({'loss': loss}, self)
-        return self.loss_ratio * loss
-
-    def inference(self, inputs):
-        h = self._embed_input(inputs)
-        return self.out(self.lin(h))
-
-class MultilayerContext(LinRegContextConcat):
-
-    def __init__(self, n_vocab, n_units, loss_func, out, window=1, n_layers=1, n_hidden=50, wlen=False, pos=False, prev_fix=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
-        super(LinRegContextConcat, self).__init__()
-
-        self.n_units = n_units
-        self.n_pos_units = n_pos_units
-        self.pos = pos
-        self.wlen = wlen
-        self.prev_fix = prev_fix
-        self.loss_ratio = loss_ratio
-
-        with self.init_scope():            
-            self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
-
-            if self.pos and self.wlen and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 2
-
-            elif self.pos and self.prev_fix:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
-            
-            elif self.wlen and self.prev_fix:
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + 2 
-            
-            elif self.pos and self.wlen:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units + 1 
-            
-            elif self.wlen:
-                n_inputs = n_units + 1
-            
-            elif self.prev_fix:
-                n_inputs = n_units + 1
-            
-            elif self.pos:
-                assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs = n_units + n_pos_units
-            
-            else:
-                n_inputs = n_units
-
-            self.lin = L.Linear(n_inputs * (window + 1), n_hidden, initialW=I.Uniform(1. / n_inputs))
-
-            self.layers = list()
-            for i in range(n_layers - 1):
-                self.layers.append(L.Linear(n_hidden, n_hidden, initialW=I.Uniform(1. / n_units)))
-            self.layers.append(L.Linear(n_hidden, 1, initialW=I.Uniform(1. / n_units)))
-
-            self.out = out
-            self.loss_func = loss_func
-
-    def __call__(self, inputs, target):
-        i = (self._embed_input(inputs)) # called from superclass
-        h = self.out(self.lin(i))
-        for l in self.layers:
-            h = self.out(l(h))
-
-        loss = self.loss_func(h, target)
-        reporter.report({'loss': loss}, self)
-        return self.loss_ratio * loss
-
-    def inference(self, inputs):
-        i = (self._embed_input(inputs)) # called from superclass
-        h = self.out(self.lin(i))
-        for l in self.layers:
-            h = self.out(l(h))
-        return h
-
+        h = self._embed_input(inputs) # called from superclass
+        for i in range(self.n_layers):
+            h = self.out(getattr(self,'layer{}'.format(i))(h))
+        o = self.out(self.outlayer(h))
+        return o.data      
 
 def convert(batch, device):
     x, targets = batch
-    n = len(x)
-    inputs = list()
-    for i in range(n):
+    for k in x:
         if device >= 0:
-            x[i] = cuda.to_gpu(x[i])
-        inputs.append(x[i])       
+            x[k] = cuda.to_gpu(x[k])
     if device >= 0:
         targets = cuda.to_gpu(targets)
-    return tuple(inputs), targets
-
+    return x, targets

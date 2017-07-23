@@ -25,9 +25,10 @@ window = 5
 epoch = 20
 model_types = ['cbow', 'skipgram']
 out_type = 'ns'
-vocab = 'init_vocab'
+vocab_folder = 'init_vocab'
 
 tarball_folder = '../dataset/downsampled_gigaword'
+dundee = '../dataset/dundee.txt'
 n = 10
 
 model_w2v = ['skipgram', 'cbow']
@@ -46,7 +47,7 @@ for k, i in enumerate(configurations):
 i = int(sys.argv[1]) - 1 
 model_word2vec, tarball = configurations[i]
 
-out = os.path.join('test_multitask/result', tarball.split('.')[0], model_word2vec)
+out = os.path.join('test_multitask_limit_vocab/result', tarball.split('.')[0], model_word2vec)
 train_tarball = os.path.join(tarball_folder, tarball)
 
 print('# unit: {}'.format(unit))
@@ -76,7 +77,7 @@ else:
     raise Exception('Unknown model type: {}'.format(model_word2vec))
 
 alpha = 0.025
-min_count = 5
+min_count = 0
 max_vocab_size = 400000
 sub_sampling = 0.001
 n_workers = 3
@@ -84,7 +85,7 @@ cbow_mean = 1 # 1:mean, 0:sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-sentences = gensim.models.word2vec.LineSentence(train_tarball)
+sentences = gensim.models.word2vec.LineSentence(dundee)
 
 model = gensim.models.word2vec.Word2Vec(sentences=None, size=unit, alpha=alpha, window=window, min_count=min_count, max_vocab_size=max_vocab_size, iter=epoch,
 sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, null_word=0, trim_rule=None, sorted_vocab=1)
@@ -92,19 +93,22 @@ sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, 
 if not os.path.isdir(out):
     os.makedirs(out)
 
-if os.path.isfile(vocab + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"):
-    model.reset_from(gensim.models.Word2Vec.load(vocab + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
+if os.path.isfile(vocab_folder + os.sep + "init_vocab_" + os.path.basename(dundee) + ".model"):
+    model.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(dundee) + ".model"))
 else:
     logging.info("Building vocab...")
     model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
     logging.info("Vocabulary built")
     logging.info("Saving initial model with built vocabulary...")
-    if not os.path.isdir(vocab):
-        os.makedirs(vocab)
-    model.save(vocab + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model")
+    model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(dundee) + ".model")
 
 logging.info("Starting training...")
 report_delay = 3.0
+
+model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
+model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
+
+sentences = gensim.models.word2vec.LineSentence(train_tarball)
 
 # word2vec_iter = MultitaskBatchIterator(sentences, epoch, model.corpus_count, batch_size=batchsize, maxsize=5)
 
@@ -132,6 +136,6 @@ report_delay = 3.0
 #         next_alpha = start_alpha - (start_alpha - end_alpha) * progress
 #         next_alpha = max(end_alpha, next_alpha)
 
-model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
+model.train(sentences, total_words=None, epochs=model.iter, total_examples=model_2.corpus_count, queue_factor=2, report_delay=report_delay)
 
-model.save(out + os.sep + "std_word2vec.model")
+model.save(out + os.sep + "std_limit_vocab_word2vec.model")

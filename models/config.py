@@ -1,27 +1,27 @@
 from chainer import functions as F
 
-train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_32.tar.bz2'
+train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_1024.tar.bz2'
 
 # ---------------------------------------------- #
 ## EYETRACKING PARAMETERS
 gpu = -1
-model_eyetracking_inference = 'linreg' ## must be in ['linreg', 'context']
 out_type_eyetracking = 'id' ## must be in ['tanh', 'sigmoid', 'id', 'relu']
 #batchsize_eyetracking = 100
-if model_eyetracking_inference == 'context':
-    window_eyetracking = 1
+bins = False
+window_eyetracking = 5
 reg_coeff = 0.001
 wlen = True
 pos = True
 prev_fix = True
+freq = True
 n_pos_units = 50
 n_hidden = 200
-n_layers = 1
+n_layers = 0
 
 # ---------------------------------------------- #
 ## WORD2VEC PARAMETERS
 window = 5
-model_word2vec = 'cbow' ## must be in ['skipgram', 'cbow']
+model_word2vec = 'skipgram' ## must be in ['skipgram', 'cbow']
 out_type_word2vec = 'ns' ## must be in ['ns', 'hsm', 'original'] 
 
 ## GENSIM PARAMETERS
@@ -85,6 +85,6 @@ print('Training model word2vec: {}'.format(model_word2vec))
 print('Output type word2vec: {}'.format(out_type_word2vec))
 print('')
 #print('Minibatch-size eyetracking: {}'.format(batchsize_eyetracking))
-print('Training model eyetracking: {}'.format(model_eyetracking_inference))
+print('Training model eyetracking: {}'.format('with bins' if bins else 'without bins'))
 print('Output type eyetracking: {}'.format(out_type_eyetracking))
 print('')

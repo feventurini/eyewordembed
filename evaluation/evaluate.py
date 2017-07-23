@@ -9,6 +9,7 @@ analogy_questions_file_google = './evaluation_datasets/analogy_google_questions.
 ws_353_dataset = './evaluation_datasets/wordsim353.txt'
 simlex_999_dataset = './evaluation_datasets/SimLex-999.txt'
 bats_folder = './evaluation_datasets/BATS_3.0'
+simverb_3500_dev_dataset = './evaluation_datasets/simverb-500-dev.txt'
 
 def analogy_accuracy(model, questions_file):
     acc = model.accuracy(questions_file)
@@ -16,12 +17,12 @@ def analogy_accuracy(model, questions_file):
     correct = sum([len(acc[i]['correct']) for i in range(5)])
     total = sum([len(acc[i]['correct']) + len(acc[i]['incorrect']) for i in range(5)])
     accuracy = 100*float(correct)/total
-    logging.info('\nSemantic: {:d}/{:d}, Accuracy: {:.2f}%'.format(correct, total, accuracy))
+    logging.info('Semantic: {:d}/{:d}, Accuracy: {:.2f}%'.format(correct, total, accuracy))
     
     correct = sum((len(acc[i]['correct']) for i in range(5, len(acc)-1)))
     total = sum((len(acc[i]['correct']) + len(acc[i]['incorrect'])) for i in range(5,len(acc)-1))
     accuracy = 100*float(correct)/total
-    logging.info('Syntactic: {:d}/{:d}, Accuracy: {:.2f}%\n'.format(correct, total, accuracy))
+    logging.info('Syntactic: {:d}/{:d}, Accuracy: {:.2f}%'.format(correct, total, accuracy))
     
 def similarity_accuracy(model, similarity_file):
     acc = model.evaluate_word_pairs(similarity_file)
@@ -75,4 +76,5 @@ if __name__ == '__main__':
     analogy_accuracy(model, analogy_questions_file_google)
     similarity_accuracy(model, ws_353_dataset)
     similarity_accuracy(model, simlex_999_dataset)
+    similarity_accuracy(model, simverb_3500_dev_dataset)
     # bats_analogy(model, bats_folder, args.output)
