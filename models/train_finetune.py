@@ -61,9 +61,9 @@ if __name__ == '__main__':
         model.save(os.path.join(out_folder, 'finetuned_gigaword_{}_{}.model'.format(os.path.basename(train_tarball), n_units)))
     
     if bins:
-        vocab, pos2id, n_classes, n_participants, train, val = pd.load_dataset(bins=True)
+        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(model.wv.vocab, gensim=True, bins=True)
     else:
-        vocab, pos2id, train, val, test, mean, std = pd.load_dataset()
+        vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True)
 
     print('Data samples eyetracking: %d' % len(train))
 
@@ -100,10 +100,15 @@ if __name__ == '__main__':
     trainer.extend(extensions.Evaluator(val_iter, model_eyetracking, converter=convert, device=gpu))
 
     trainer.extend(extensions.LogReport(log_name='log_' + str(n_units) + '_' + out_type_eyetracking))
-    trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+
+    if bins:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
+    else:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+
     trainer.extend(extensions.ProgressBar())
 
     trainer.run()
 
-    model.save(os.path.join(out_folder, 'finetuned_gigaword_{}_{}_eyetracking_'.format(os.path.basename(train_tarball), n_units)) + 
+    model.save(os.path.join(out_folder, 'finetuned_gigaword_{}_{}_{}_eyetracking_'.format(os.path.basename(train_tarball), n_units, ('classifier' if bins else 'linreg'))) + 
         str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.model')

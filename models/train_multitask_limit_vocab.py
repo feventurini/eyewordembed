@@ -69,11 +69,11 @@ class Word2VecExtension(E.Extension):
             self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=self.alpha, end_alpha=self.next_alpha)
 
 if __name__ == '__main__':
-    dundee = '../dataset/dundee.txt'
+    dundee = '../dataset/trimmed_dundee.txt'
     sentences = gensim.models.word2vec.LineSentence(dundee)
 
     model = gensim.models.word2vec.Word2Vec(sentences=None, size=n_units, alpha=alpha, window=window, min_count=0, max_vocab_size=max_vocab_size, 
-    sample=sub_sampling, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, 
+    sample=0.0, seed=1, workers=n_workers, min_alpha=0.0001, sg=sg, hs=hs, negative=negative, cbow_mean=cbow_mean, 
     iter=epoch, null_word=0, trim_rule=None, sorted_vocab=1, batch_words=10000)
 
     if not os.path.isdir(out_folder):
@@ -91,9 +91,9 @@ if __name__ == '__main__':
         model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(dundee) + ".model")
 
     if bins:
-        vocab, pos2id, n_classes, n_participants, train, val = pd.load_dataset(model.wv.vocab, gensim=True, bins=True)
+        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(model.wv.vocab, gensim=True, bins=True, tokenize=True)
     else:
-        vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True)
+        vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True, tokenize=True)
 
     model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
     model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
@@ -107,8 +107,8 @@ if __name__ == '__main__':
     model.batch_words = np.ceil(batchsize_word2vec/10)
 
     word2vec_iter = MultitaskBatchIterator(sentences, int(epoch*epoch_ratio), model_2.corpus_count, batchsize_word2vec)
-    train_iter = EyetrackingBatchIterator(train, window_eyetracking, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
-    val_iter = EyetrackingBatchIterator(val, window_eyetracking, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
+    train_iter = EyetrackingBatchIterator(train, window_eyetracking, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
+    val_iter = EyetrackingBatchIterator(val, window_eyetracking, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
 
     print('Batch-size eyetracking: {}'.format(batchsize_eyetracking))
     print('Batch-size word2vec: {}'.format(batchsize_word2vec))
@@ -124,9 +124,9 @@ if __name__ == '__main__':
     #print(model.wv.vocab['the'].index)
 
     if bins:
-        model_eyetracking = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
+        model_eyetracking = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
     else:
-        model_eyetracking = EyetrackingLinreg(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
+        model_eyetracking = EyetrackingLinreg(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
 
     if gpu >= 0:
         model.to_gpu()

@@ -3,7 +3,8 @@ import numpy as np
 
 class EyetrackingBatchIterator(chainer.dataset.Iterator):
 
-    def __init__(self, dataset, window, batch_size, repeat=True, shuffle=True, wlen=False, pos=False, prev_fix=False, freq=False, bins=False):
+    def __init__(self, dataset, window, batch_size, repeat=True, shuffle=True, 
+        wlen=False, pos=False, prev_fix=False, freq=False, surprisal=False, bins=False):
         self.words = dataset[:,0].astype(np.int32)#.reshape(-1,1)
         self.bins = bins
         if bins:
@@ -15,11 +16,13 @@ class EyetrackingBatchIterator(chainer.dataset.Iterator):
         self.wlens = dataset[:,2].astype(np.float32)
         self.pos_tags = dataset[:,3].astype(np.int32)
         self.freqs = dataset[:,5].astype(np.float32)
+        self.surprisals = dataset[:,6].astype(np.float32)
 
         self.wlen = wlen
         self.pos = pos
         self.prev_fix = prev_fix
         self.freq = freq
+        self.surprisal = surprisal
 
         self.window = window
         self.batch_size = batch_size
@@ -74,6 +77,8 @@ class EyetrackingBatchIterator(chainer.dataset.Iterator):
             out['wlen'] = self.wlens.take(pos)
         if self.freq:
             out['freq'] = self.freqs.take(pos)
+        if self.surprisal:
+            out['surprisal'] = self.surprisals.take(pos)
 
         return out, times
 

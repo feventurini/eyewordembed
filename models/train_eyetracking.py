@@ -30,50 +30,6 @@ import os
 from eyetracking import *
 from eyetracking_batch_iter import *
 
-def inference(model_path, model_type='linreg', out_type='id', n_units=100, wlen=False, pos=False, n_pos_units=50):
-    vocab, pos2id, train, val, test, mean, std = pd.load_dataset()()
-    n_vocab = len(vocab)
-    n_pos = len(pos2id)
-    loss_func = F.mean_squared_error
-
-    if out_type == 'tanh':
-        out = F.tanh
-    elif out_type == 'relu':
-        out = F.relu
-    elif out_type == 'sigmoid':
-        out = F.sigmoid
-    elif out_type == 'id':
-        out = F.identity
-    else:
-        raise Exception('Unknown output type: {}'.format(out_type))
-
-
-    if model_type == 'linreg':
-        model = LinReg(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-    elif model_type == 'multilayer':
-        model = Multilayer(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_layers=1, n_hidden=50, n_pos=n_pos, n_pos_units=50)
-    elif model_type == 'context':
-        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-    elif model_type == 'multilayer_context':
-        model = LinRegContextConcat(n_vocab, n_units, loss_func, out, wlen=wlen, pos=pos, n_pos=n_pos, n_pos_units=n_pos_units)
-    elif model_type == 'baseline':
-        model = Baseline(0.0, loss_func)
-    else:
-        raise Exception('Unknown model type: {}'.format(model_type))
-
-    S.load_npz(model_path, model)
-    i = input('Insert word to test (CTRL-D to end):\t')
-    while i:
-        if i not in vocab:
-            i = input('Insert word to test (CTRL-D to end):\t')
-            continue
-
-        i = np.array(vocab[i]).astype(np.int32).reshape((1,1))
-        o = model.inference(i)*std + mean
-        print('Prediction: ' + str(o))
-        i = input('Insert word to test (CTRL-D to end):\t')
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', '-g', default=-1, type=int,
@@ -105,6 +61,11 @@ if __name__ == '__main__':
     parser.add_argument( "-freq", "-f", 
                     required=False, action='store_true',
                     help="Add this option if you want the model to use the frequency as input")
+    parser.add_argument( "-surprisal", "-sur",  
+                    action='store_true', required=False,
+                    help="Add this option if you want the model to use surprisal as a feature")
+    parser.add_argument('--surprisal_order', '-order', default=5, type=int,
+                    help='order for surprisal lm')
     parser.add_argument( "-bins", "-b", 
                     required=False, action='store_true',
                     help="Whether to use the classifier or linear regression")
@@ -123,13 +84,15 @@ if __name__ == '__main__':
     print('# epoch: {}'.format(args.epoch))
     print('Output type: {}'.format(args.out_type))
 
+    assert(args.surprisal_order in range(2,6))
+
     if args.gpu >= 0:
         cuda.get_device_from_id(args.gpu).use()
 
     if args.bins:
-        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(bins=True)
+        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(bins=True, surprisal_order=args.surprisal_order)
     else:
-        vocab, pos2id, train, val, test, mean, std = pd.load_dataset()
+        vocab, pos2id, train, val, test, mean, std = pd.load_dataset(surprisal_order=args.surprisal_order)
     
         print('')
         print('Mean dataset times: {}'.format(mean))
@@ -164,12 +127,12 @@ if __name__ == '__main__':
     window = args.window
 
     if args.bins:
-        model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, n_pos=n_pos, n_pos_units=50)
+        model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, n_pos=n_pos, n_pos_units=50)
     else:
-        model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, n_pos=n_pos, n_pos_units=50)
+        model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, n_pos=n_pos, n_pos_units=50)
 
-    train_iter = EyetrackingBatchIterator(train, args.window, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, bins=args.bins)
-    val_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, bins=args.bins)
+    train_iter = EyetrackingBatchIterator(train, args.window, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
+    val_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
 
     if args.gpu >= 0:
         model.to_gpu()
@@ -199,7 +162,7 @@ if __name__ == '__main__':
     if not args.bins:
         from sklearn.metrics import r2_score
 
-        test_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, bins=args.bins)
+        test_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
         test_set = list(test_iter.next())
         for t in test_iter:
             x, y = t
@@ -217,13 +180,19 @@ if __name__ == '__main__':
         r2 = r2_score(target, predictions)
         print('R_squared coefficient: {}'.format(r2))
 
-    # name = 'eyetracking_' + str(args.unit) + '_' + args.out_type
-    # with open(os.path.join(args.out, name + '.w'), 'w') as f:
-    #     f.write('%d %d\n' % (len(index2word), args.unit))
-    #     w = cuda.to_cpu(model.embed.W.data)
-    #     for i, wi in enumerate(w):
-    #         v = ' '.join(map(str, wi))
-    #         f.write('%s %s\n' % (index2word[i], v))
+    wl = '_wl' if args.wlen else ''
+    pos = '_pos' if args.pos else ''
+    freq = '_freq' if args.freq else ''
+    pf = '_pf' if args.prev_fix else ''
+    sur = '_sur' if args.surprisal else ''
+    name = 'eyetracking{}{}{}{}{}'.format(wl, pos, pf, freq, sur)
+
+    with open(os.path.join(args.out, name + '.w'), 'w') as f:
+        f.write('%d %d\n' % (len(index2word), args.unit))
+        w = cuda.to_cpu(model.embed.W.data)
+        for i, wi in enumerate(w):
+            v = ' '.join(map(str, wi))
+            f.write('%s %s\n' % (index2word[i], v))
 
     # S.save_npz(os.path.join(args.out, name + '.model'), model)
 

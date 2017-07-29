@@ -7,14 +7,22 @@ import timing
 import util
 import os
 from scipy.ndimage.interpolation import shift
+import nltk
 
 dundee_folder = '../dataset/dundee_parsed_gr'
 dundee_folder_bins = '../dataset/dundee_parsed'
 
 np.random.seed(111)
 
-def create_vocabulary(words, max_size=None):
-	counter = collections.Counter(filter(lambda x: x!='', words))
+def create_vocabulary(words, max_size=None, tokenize=False):
+	if tokenize:
+		tokenized_words = []
+		for w in filter(lambda x: x!='', words):
+			tokenized_words += nltk.word_tokenize(w)
+	else:
+		tokenized_words = filter(lambda x: x!='', words)
+
+	counter = collections.Counter(tokenized_words)
 	counter = sorted(counter.most_common(max_size))
 	word2id = {k:i for i, (k,v) in enumerate(counter)}
 	return word2id, counter
@@ -67,7 +75,7 @@ def normalize(values, mean=None, std=None):
 		std = np.sqrt(np.var(res))
 	return (res - mean)/std, mean, std
 
-def load_dataset(word2id=None, gensim=False, bins=False):
+def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, tokenize=False):
 	if bins:
 		dundee_folder = '../dataset/dundee_parsed'
 		participants_path = os.path.join(dundee_folder,'Participant')
@@ -79,10 +87,12 @@ def load_dataset(word2id=None, gensim=False, bins=False):
 	ptimes_path = os.path.join(dundee_folder, 'n-1_fix_dur')
 	pos_path = os.path.join(dundee_folder,'CPOS')
 	freq_path = os.path.join(dundee_folder,'BNC_freq')
+	surprisal_path = os.path.join(dundee_folder, '{}gram_surprisal'.format(surprisal_order))
 	
 	words = util.load(words_path)
 	if not word2id:
-		word2id, _ = create_vocabulary(words)
+		word2id, _ = create_vocabulary(words, tokenize=tokenize)
+		# word2id, _ = create_vocabulary(words)
 
 	lens = [len(w) for w in words]
 
@@ -92,27 +102,44 @@ def load_dataset(word2id=None, gensim=False, bins=False):
 	tot_fix_dur = util.load(times_path)
 	prev_fix_dur = util.load(ptimes_path)
 	freqs = util.load(freq_path)
+	surprisals = util.load(surprisal_path)
 	
+	def extract(elements):
+		if not tokenize:
+			return zip(*filter(lambda x: x[0] in word2id, elements))
+		else:
+			result = []	
+			for e in elements:
+				temp = list(e)
+				word = e[0]
+				sub_words = nltk.word_tokenize(word)
+				if not all(map(lambda x: x in word2id, sub_words)):
+					continue
+				for w in sub_words:
+					result.append(tuple([w] + temp[1:]))
+			return zip(*result)
+
 	if bins:
 		participants = util.load(participants_path)
 		binned_times, n_participants, n_classes = create_bins(tot_fix_dur, participants)
-		prev_binned_times, n_participants, n_classes = create_bins(prev_fix_dur, participants)
+		# prev_binned_times, n_participants, n_classes = create_bins(prev_fix_dur, participants)
 
-		# words, binned_times, lens, pos, prev_binned_times = words[1:], binned_times[1:], lens[1:], pos[1:], binned_times[:-1]
-		# ws, ts, ls, ps, pts, fs = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs)))
-		ws, ts, ls, ps, pts, fs = zip(*filter(lambda x: x[0] in word2id, zip(words, binned_times, lens, pos, prev_binned_times, freqs)))
-		
+		words, binned_times, lens, pos, prev_binned_times, freqs, surprisals = words[1:], binned_times[1:], lens[1:], pos[1:], binned_times[:-1], freqs[1:], surprisals[1:]
+		# ws, ts, ls, ps, pts, fs, ss = zip(*filter(lambda x: x[0] in word2id, zip(words, binned_times, lens, pos, prev_binned_times, freqs, surprisals)))
+
+		ws, ts, ls, ps, pts, fs, ss = extract(zip(words, binned_times, lens, pos, prev_binned_times, freqs, surprisals))	
 		times = np.array(ts).reshape((-1,1))
 		ptimes = np.array(pts).reshape((-1,1))
 	
 	else:
-		# words, tot_fix_dur, lens, pos, prev_fix_dur = words[1:], tot_fix_dur[1:], lens[1:], pos[1:], tot_fix_dur[:-1]
-		words, tot_fix_dur, lens, pos, prev_fix_dur = words[1:], tot_fix_dur[1:], lens[1:], pos[1:], prev_fix_dur[:-1]
-		ws, ts, ls, ps, pts, fs = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs)))
-		
+		words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals = words[1:], tot_fix_dur[1:], lens[1:], pos[1:], tot_fix_dur[:-1], freqs[1:], surprisals[1:] 
+		# ws, ts, ls, ps, pts, fs, ss = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals)))
+
+		ws, ts, ls, ps, pts, fs, ss = extract(zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals))
 		times, mean, std = normalize(ts)
 		ptimes, _, _ = normalize(pts, mean, std)
 
+	print('ye')
 	if not gensim:
 		words_array = np.array([word2id[w] for w in ws]).reshape((-1,1))
 	else:
@@ -123,9 +150,13 @@ def load_dataset(word2id=None, gensim=False, bins=False):
 
 	pos_array = np.array([pos2id[p] for p in ps]).reshape((-1,1))
 	lens_array = np.array(ls).reshape((-1,1))
-	freqs_array, _, _ = normalize(fs)
+	freqs_array = np.array(fs).reshape((-1,1))
+	# freqs_array, _, _ = normalize(freqs_array)
+	surprisals_array = np.array(ss).reshape((-1,1))
+	# surprisals_array, _, _ = normalize(surprisals_array)
+
 	
-	dataset = np.hstack((words_array, times, lens_array, pos_array, ptimes, freqs_array))
+	dataset = np.hstack((words_array, times, lens_array, pos_array, ptimes, freqs_array, surprisals_array))
 	
 	np.random.shuffle(dataset)
 	# train, val, test = np.split(dataset, [int(.8*len(dataset)), int(.9*len(dataset))])

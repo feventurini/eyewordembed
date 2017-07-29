@@ -54,21 +54,28 @@ if __name__ == '__main__':
     rule_name = {O.AdaGrad: 'adagrad', O.Adam: 'adam'}
     rules = [O.AdaGrad, O.Adam]
     lrs = [0.01, 0.001, 0.0001]
-    reg_coeffs = [0.001, 0.0001, 0.0]
+    reg_coeffs = [0.001, 0.01, 0.0]
     wlen = True
     pos = True
     prev_fix = True
     freq = True
+    surprisal = True
     n_pos_units = 50
     outs = ['tanh', 'id']
     n_hidden = 200
     n_layerss = [0, 1, 2]
     windows = [0, 1, 2]
 
-    configs = [(20, True), (20, False), (60, True), (60, False), (100, True), (100, False)]
+    epochs_model = [(20, True), (20, False), (60, True), (60, False), (100, True), (100, False)]
 
+    configs = []
+    for e, m in epochs_model:
+        for lr in lrs:
+            configs.append((e,m,lr))
+
+    print(configs)
     index_selected = int(sys.argv[1]) - 1
-    epoch, bins = configs[index_selected] 
+    epoch, bins, lr = configs[index_selected] 
 
     if bins:
         vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(bins=True)
@@ -85,61 +92,59 @@ if __name__ == '__main__':
     print('data length: %d' % len(train))
     print('n_pos: %d' % n_pos)
 
-
     for n_layers in n_layerss:
         for window in windows:
             for out_type in outs:
-                for lr in lrs:
-                    for r in rules:
-                        for reg_coeff in reg_coeffs:
+                for r in rules:
+                    for reg_coeff in reg_coeffs:
 
-                            if n_layers > 0 and out_type=='id':
-                                continue
+                        if n_layers > 0 and out_type=='id':
+                            continue
 
-                            if out_type == 'tanh':
-                                out = F.tanh
-                            elif out_type == 'id':
-                                out = F.identity
-                            else:
-                                raise Exception('Unknown output type: {}'.format(out_type))
+                        if out_type == 'tanh':
+                            out = F.tanh
+                        elif out_type == 'id':
+                            out = F.identity
+                        else:
+                            raise Exception('Unknown output type: {}'.format(out_type))
 
-                            if bins:
-                                loss_func = F.softmax_cross_entropy
-                            else:
-                                loss_func = F.mean_squared_error
+                        if bins:
+                            loss_func = F.softmax_cross_entropy
+                        else:
+                            loss_func = F.mean_squared_error
 
-                            if bins:
-                                model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50)
-                            else:
-                                model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50)
+                        if bins:
+                            model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50)
+                        else:
+                            model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50)
 
-                            train_iter = EyetrackingBatchIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
-                            val_iter = EyetrackingBatchIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
+                        train_iter = EyetrackingBatchIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
+                        val_iter = EyetrackingBatchIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
 
-                            if gpu >= 0:
-                                model.to_gpu()
+                        if gpu >= 0:
+                            model.to_gpu()
 
-                            name = '{}layers_{}window_{}_{}_lr{}_reg{}_epochs{}'.format(n_layers, window, out_type, rule_name[r], lr, reg_coeff, epoch)
-                            model_type = 'classifier' if bins else 'linreg'
-                            print('{}_{}'.format(model_type, name))
+                        name = '{}layers_{}window_{}_{}_lr{}_reg{}_epochs{}'.format(n_layers, window, out_type, rule_name[r], lr, reg_coeff, epoch)
+                        model_type = 'classifier' if bins else 'linreg'
+                        print('{}_{}'.format(model_type, name))
 
-                            optimizer = r(lr)
-                            optimizer.setup(model)
-                            l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
-                            optimizer.add_hook(l2_reg, 'l2')
+                        optimizer = r(lr)
+                        optimizer.setup(model)
+                        l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
+                        optimizer.add_hook(l2_reg, 'l2')
 
-                            updater = training.StandardUpdater(train_iter, optimizer, converter=convert, device=gpu)
-                            trainer = training.Trainer(updater, (epoch, 'epoch'), out=out_path + os.sep + str(epoch) + os.sep + model_type)
+                        updater = training.StandardUpdater(train_iter, optimizer, converter=convert, device=gpu)
+                        trainer = training.Trainer(updater, (epoch, 'epoch'), out=out_path + os.sep + str(epoch) + os.sep + model_type)
 
-                            trainer.extend(extensions.Evaluator(val_iter, model, converter=convert, device=gpu))
+                        trainer.extend(extensions.Evaluator(val_iter, model, converter=convert, device=gpu))
 
-                            trainer.extend(extensions.LogReport(log_name='{}.log'.format(name)))
-                            
-                            if bins:
-                                trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
-                            else:
-                                trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+                        trainer.extend(extensions.LogReport(log_name='{}.log'.format(name)))
+                        
+                        if bins:
+                            trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
+                        else:
+                            trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
 
-                            trainer.extend(extensions.ProgressBar())
-                            trainer.run()
+                        trainer.extend(extensions.ProgressBar())
+                        trainer.run()
 

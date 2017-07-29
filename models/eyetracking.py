@@ -26,7 +26,8 @@ class BaselineClassifier(chainer.Chain):
 
 class EyetrackingClassifier(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, n_participants, n_classes, loss_func, out, n_layers=0, window=0, wlen=False, pos=False, prev_fix=False, freq=False, n_pos=None, n_hidden=200, n_pos_units=50, loss_ratio=1.0):
+    def __init__(self, n_vocab, n_units, n_participants, n_classes, loss_func, out, n_layers=0, window=0, wlen=False, 
+        pos=False, prev_fix=False, freq=False, surprisal=False, n_pos=None, n_hidden=200, n_pos_units=50, loss_ratio=1.0):
         super(EyetrackingClassifier, self).__init__()
 
         self.n_units = n_units
@@ -35,6 +36,7 @@ class EyetrackingClassifier(chainer.Chain):
         self.wlen = wlen
         self.prev_fix = prev_fix
         self.freq = freq
+        self.surprisal = surprisal
         self.loss_ratio = loss_ratio
         self.n_participants = n_participants
         self.n_layers = n_layers
@@ -55,6 +57,9 @@ class EyetrackingClassifier(chainer.Chain):
                 n_inputs += 1
 
             if self.freq:
+                n_inputs += 1
+
+            if self.surprisal:
                 n_inputs += 1
             
             n_inputs *= (window + 1)
@@ -97,6 +102,10 @@ class EyetrackingClassifier(chainer.Chain):
             f = chainer.Variable(inputs['freq'], name='frequency')
             variables.append(f)
 
+        if self.surprisal:
+            s = chainer.Variable(inputs['surprisal'], name='surprisal')
+            variables.append(s)
+
         h = F.concat(tuple(variables), axis=1)# * (1. / w.shape[1])
 
         h.name = 'concatenated_word_embeddings'
@@ -137,7 +146,8 @@ class BaselineLinreg(chainer.Chain):
 
 class EyetrackingLinreg(chainer.Chain):
 
-    def __init__(self, n_vocab, n_units, loss_func, out, window=0, n_layers=0, n_hidden=200, wlen=False, pos=False, prev_fix=False, freq=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
+    def __init__(self, n_vocab, n_units, loss_func, out, window=0, n_layers=0, n_hidden=200, wlen=False, 
+        pos=False, prev_fix=False, freq=False, surprisal=False, n_pos=None, n_pos_units=50, loss_ratio=1.0):
         super(EyetrackingLinreg, self).__init__()
 
         self.n_units = n_units
@@ -146,6 +156,7 @@ class EyetrackingLinreg(chainer.Chain):
         self.wlen = wlen
         self.prev_fix = prev_fix
         self.freq = freq
+        self.surprisal = surprisal
         self.loss_ratio = loss_ratio
         self.n_layers = n_layers
 
@@ -165,6 +176,9 @@ class EyetrackingLinreg(chainer.Chain):
                 n_inputs += 1
 
             if self.freq:
+                n_inputs += 1
+
+            if self.surprisal:
                 n_inputs += 1
             
             n_inputs *= (window + 1)
@@ -205,6 +219,10 @@ class EyetrackingLinreg(chainer.Chain):
         if self.freq:
             f = chainer.Variable(inputs['freq'], name='frequency')
             variables.append(f)
+
+        if self.surprisal:
+            s = chainer.Variable(inputs['surprisal'], name='surprisal')
+            variables.append(s)
 
         h = F.concat(tuple(variables), axis=1)# * (1. / w.shape[1])
 

@@ -31,11 +31,8 @@ if __name__ == '__main__':
 
 		for filename in listdir(os.path.join(folder,subfolder)):	
 			l = extract_log(filename)
-
-			if filename.split(os.sep)[-2].startswith('multilayer') and filename.split(os.sep)[-1].split('_')[0]=='id':
-				continue
-
-			if filename.split(os.sep)[-1].split('_')[-2]!='reg0.0':
+			
+			if filename.split(os.sep)[-2].startswith('classifier'):
 				continue
 
 			filename = ' '.join([filename.split(os.sep)[-2].upper(), filename.split(os.sep)[-1]])
@@ -45,7 +42,7 @@ if __name__ == '__main__':
 				if l not in result:
 					result.append(l)
 
-		result = sorted(result, key=lambda x: (np.mean(x['validation/main/loss']), x['validation/main/loss'][-1]))
+		result = sorted(result, key=lambda x: x['validation/main/loss'][-1]) #(np.mean(x['validation/main/loss']), x['validation/main/loss'][-1]))
 		with open(out_name, 'w+') as out:
 			for i in result:
 				print(i['name'], file=out)
