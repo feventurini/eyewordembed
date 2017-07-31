@@ -25,6 +25,7 @@ import time
 
 import prepare_dataset as pd
 from progress_bar import ProgressBarWord2Vec
+from early_stopping_gensim import *
 
 from eyetracking_batch_iter import EyetrackingBatchIterator
 from multitask_batch_iter import MultitaskBatchIterator
@@ -75,39 +76,52 @@ if __name__ == '__main__':
     n = 10
     tarball_folder = '../dataset/downsampled_gigaword'
 
-    binss = [True, False]
-    model_w2v = ['skipgram']
-    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(7,n)]
-    windows = [2]
-    n_layerss = [0]
+    bins = False
+    model_w2v = ['cbow','skipgram']
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
+    windows = [0]
+    n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}
-    rules = [O.AdaGrad]
-    lrs = [0.01]
+    r = O.AdaGrad
+    lr = 0.01
     wlen = True
     pos = True
     prev_fix = True
-    outs = ['tanh', 'id']
+    freq = True
+    out_type = 'id'
     reg_coeffs = [0.0, 0.001]
-    ratios = [1.0, 0.1, 0.001]
+    loss_ratio = 1.0
 
     configurations = []
 
-    for bins in binss:
-        for model_word2vec in model_w2v:
-            for tarball in tarballs:
-                for window_eyetracking in windows:
-                    for n_layers in n_layerss:
-                        for out_type in outs:
-                            for lr in lrs:
-                                for r in rules:
-                                    for reg_coeff in reg_coeffs:
-                                        for loss_ratio in ratios:
-                                            if n_layers > 0 and out_type=='id':
-                                                continue
-                                            configurations.append((model_word2vec, tarball, bins, window_eyetracking, n_layers, out_type, reg_coeff, r, lr, loss_ratio))
+    for model_word2vec in model_w2v:
+        for tarball in tarballs:
+            for window_eyetracking in windows:
+                for reg_coeff in reg_coeffs:
+                        configurations.append((model_word2vec, tarball, bins, window_eyetracking, n_layers, out_type, reg_coeff, r, lr, loss_ratio))
+
+    bins = True
+    window_eyetracking = 0
+    n_layerss = [1, 2]
+    rule_name = {O.AdaGrad: 'adagrad'}
+    r = O.AdaGrad
+    lr = 0.01
+    wlen = True
+    pos = True
+    prev_fix = True
+    freq = True
+    out_type = 'tanh'
+    reg_coeff = 0.0
+    loss_ratio = 1.0
+
+    for model_word2vec in model_w2v:
+        for tarball in tarballs:
+            for n_layers in n_layerss:
+                    configurations.append((model_word2vec, tarball, bins, window_eyetracking, n_layers, out_type, reg_coeff, r, lr, loss_ratio))
 
 
-    configurations.reverse()  
+    for i in configurations:
+        print(i)
     # for k, i in enumerate(configurations):
     #     print(k, i)
     print(len(configurations))
@@ -163,11 +177,10 @@ if __name__ == '__main__':
         logging.info("Saving initial model with built vocabulary...")
         model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model")
 
-
     if bins:
-        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(model.wv.vocab, gensim=True, bins=True)
+        vocab, pos2id, n_classes, n_participants, train, val, test = pd.load_dataset(model.wv.vocab, gensim=True, bins=True, tokenize=True)
     else:
-        vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True)
+        vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True, tokenize=True)
 
     print('Data samples eyetracking: %d' % len(train))
     print('Data samples word2vec:\t%d' % model.corpus_count)
@@ -211,8 +224,19 @@ if __name__ == '__main__':
     trainer.extend(extensions.Evaluator(val_iter, model_eyetracking, converter=convert, device=gpu))
 
     trainer.extend(extensions.LogReport(log_name=name + '.log'))
-    trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
+    if bins:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
+    else:
+        trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
 
+    if early_stopping:
+        if bins:
+            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+                trigger=chainer.training.triggers.MaxValueTrigger('validation/main/accuracy', trigger=(1, 'epoch')))
+        else:
+            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+                trigger=chainer.training.triggers.MinValueTrigger('validation/main/loss', trigger=(1, 'epoch')))
+    
     w2v_e = Word2VecExtension(word2vec_iter, model_eyetracking, model)
     trainer.extend(w2v_e)
 
@@ -220,6 +244,5 @@ if __name__ == '__main__':
 
     trainer.run()
 
-    # model.save(out_folder + os.sep + 'multitask_gigaword_' + str(n_units) + 'units_' + model_word2vec + '_' + model_eyetracking_inference  + '_' + 
-    #     str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.model')
-    model.save(out_folder + os.sep + '{}.model'.format(name))
+    if not early_stopping:
+        model.save(out_folder + os.sep + '{}.model'.format(name))

@@ -24,7 +24,7 @@ class DundeeTreebankParser():
 	
 	def initiateParser(self, firstRow):
 		c = 0
-		print(firstRow)
+		#print(firstRow)
 		for e in firstRow:
 			self.map[e.strip()] = c
 			c += 1

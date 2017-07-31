@@ -32,9 +32,6 @@ if __name__ == '__main__':
 		for filename in listdir(os.path.join(folder,subfolder), '.log'):	
 			l = extract_log(filename)
 
-			if filename.split(os.sep)[-2].startswith('multilayer') and filename.split(os.sep)[-1].split('_')[0]=='id':
-				continue
-
 			filename = ' '.join([filename.split(os.sep)[-2].upper(), filename.split(os.sep)[-1]])
 			basename, _ = os.path.splitext(filename)
 			if l:

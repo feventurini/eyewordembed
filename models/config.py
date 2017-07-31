@@ -45,6 +45,7 @@ epoch = 20
 epoch_ratio = 1.0
 loss_ratio = 1.0
 batchsize_eyetracking = 1000
+early_stopping = True
 
 if out_type_eyetracking == 'tanh':
     out_eyetracking = F.tanh

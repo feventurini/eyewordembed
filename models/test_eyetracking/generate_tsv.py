@@ -2,8 +2,11 @@ import os
 import ast
 import numpy as np
 
-def extract_log(logname):
-	l = {"main/loss": [], "validation/main/loss": []}
+def extract_log(logname, classifier=False):
+	if classifier:
+		l = {"main/loss": [], "validation/main/loss": [], "main/accuracy": [], "validation/main/accuracy": []}
+	else:
+		l = {"main/loss": [], "validation/main/loss": []}
 	with open(logname,'r') as f:
 		try:
 			log = ast.literal_eval(f.read())		
@@ -24,16 +27,17 @@ def listdir(folder, filt=None):
 
 if __name__ == '__main__':
 	folder = 'result'
+	classifier = True
 
 	for subfolder in os.listdir(folder):
-		out_name = 'statistics_noreg_{}.tsv'.format(subfolder)
+		out_name = 'statistics_{}_{}_avg.tsv'.format('classifier' if classifier else 'linreg', subfolder)
 		result = []
 
 		for filename in listdir(os.path.join(folder,subfolder)):	
-			l = extract_log(filename)
-			
-			if filename.split(os.sep)[-2].startswith('classifier'):
+			if not filename.split(os.sep)[-2].startswith('classifier' if classifier else 'linreg'):
 				continue
+
+			l = extract_log(filename, classifier=classifier)
 
 			filename = ' '.join([filename.split(os.sep)[-2].upper(), filename.split(os.sep)[-1]])
 			basename, _ = os.path.splitext(filename)
@@ -42,7 +46,10 @@ if __name__ == '__main__':
 				if l not in result:
 					result.append(l)
 
-		result = sorted(result, key=lambda x: x['validation/main/loss'][-1]) #(np.mean(x['validation/main/loss']), x['validation/main/loss'][-1]))
+		if classifier:
+			result = sorted(result, key=lambda x: (np.mean(x['validation/main/accuracy']), x['validation/main/accuracy'][-1]), reverse=True) 
+		else:
+			result = sorted(result, key=lambda x: (np.mean(x['validation/main/loss']),x['validation/main/loss'][-1]))
 		with open(out_name, 'w+') as out:
 			for i in result:
 				print(i['name'], file=out)

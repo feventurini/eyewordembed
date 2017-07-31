@@ -139,7 +139,6 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 		times, mean, std = normalize(ts)
 		ptimes, _, _ = normalize(pts, mean, std)
 
-	print('ye')
 	if not gensim:
 		words_array = np.array([word2id[w] for w in ws]).reshape((-1,1))
 	else:

@@ -23,6 +23,7 @@ import time
 
 import prepare_dataset as pd
 from progress_bar import ProgressBarWord2Vec
+from early_stopping_gensim import *
 
 from eyetracking_batch_iter import EyetrackingBatchIterator
 from multitask_batch_iter import MultitaskBatchIterator
@@ -69,6 +70,8 @@ class Word2VecExtension(E.Extension):
             self.trained_word_count = self.model_word2vec.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=self.alpha, end_alpha=self.next_alpha)
 
 if __name__ == '__main__':
+    name = 'multitask_limit_vocab_gigaword_' + str(n_units) + 'units_' + model_word2vec + '_' + ('classifier' if bins else 'linreg')  + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+
     dundee = '../dataset/trimmed_dundee.txt'
     sentences = gensim.models.word2vec.LineSentence(dundee)
 
@@ -141,7 +144,7 @@ if __name__ == '__main__':
 
     trainer.extend(extensions.Evaluator(val_iter, model_eyetracking, converter=convert, device=gpu))
 
-    trainer.extend(extensions.LogReport(log_name='log_' + str(n_units) + '_' + out_type_eyetracking))
+    trainer.extend(extensions.LogReport(log_name=name + '.log'))
 
     if bins:
         trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
@@ -151,9 +154,17 @@ if __name__ == '__main__':
     w2v_e = Word2VecExtension(word2vec_iter, model_eyetracking, model, epoch_ratio=epoch_ratio)
     trainer.extend(w2v_e)
 
+    if early_stopping:
+        if bins:
+            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+                trigger=chainer.training.triggers.MaxValueTrigger('validation/main/accuracy', trigger=(1, 'epoch')))
+        else:
+            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+                trigger=chainer.training.triggers.MinValueTrigger('validation/main/loss', trigger=(1, 'epoch')))
+
     trainer.extend(ProgressBarWord2Vec(w2v_e, update_interval=1))
 
     trainer.run()
 
-    model.save(out_folder + os.sep + 'multitask_limit_vocab_gigaword_' + str(n_units) + 'units_' + model_word2vec + '_' + ('classifier' if bins else 'linreg')  + '_' + 
-        str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.model')
+    if not early_stopping:
+        model.save(out_folder + os.sep + '{}.model'.format(name))
