@@ -89,6 +89,7 @@ if __name__ == '__main__':
     pos = True
     prev_fix = True
     freq = True
+    surprisal = True
     out_type = 'id'
     reg_coeffs = [0.0, 0.001]
     loss_ratio = 1.0
@@ -107,10 +108,6 @@ if __name__ == '__main__':
     rule_name = {O.AdaGrad: 'adagrad'}
     r = O.AdaGrad
     lr = 0.01
-    wlen = True
-    pos = True
-    prev_fix = True
-    freq = True
     out_type = 'tanh'
     reg_coeff = 0.0
     loss_ratio = 1.0
@@ -197,8 +194,8 @@ if __name__ == '__main__':
     model.batch_words = np.ceil(batchsize_word2vec/10)
 
     word2vec_iter = MultitaskBatchIterator(sentences, int(epoch*epoch_ratio), model_2.corpus_count, batchsize_word2vec)
-    train_iter = EyetrackingBatchIterator(train, window_eyetracking, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
-    val_iter = EyetrackingBatchIterator(val, window_eyetracking, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
+    train_iter = EyetrackingBatchIterator(train, window_eyetracking, batchsize_eyetracking, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
+    val_iter = EyetrackingBatchIterator(val, window_eyetracking, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
 
     print('Batch-size eyetracking: {}'.format(batchsize_eyetracking))
     print('Batch-size word2vec: {}'.format(batchsize_word2vec))
@@ -214,9 +211,9 @@ if __name__ == '__main__':
     #print(model.wv.vocab['the'].index)
 
     if bins:
-        model_eyetracking = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
+        model_eyetracking = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
     else:
-        model_eyetracking = EyetrackingLinreg(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
+        model_eyetracking = EyetrackingLinreg(n_vocab, n_units, loss_func, out_eyetracking, n_hidden=n_hidden, window=window_eyetracking, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50, loss_ratio=loss_ratio)
 
     if gpu >= 0:
         model.to_gpu()
