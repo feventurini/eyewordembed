@@ -9,8 +9,8 @@ def listdir(folder, filt=None):
 	return list(filter(lambda x: x.endswith(filt), l)) if filt else l
 
 if __name__ == '__main__':
-	src_folder = '../models/test_multitask_limit_vocab/old/result'
-	out_folder = 'eval_log_limit_vocab'
+	src_folder = '../models/test_multitask/result'
+	out_folder = 'eval_log'
 
 	for file in listdir(src_folder):
 		tar, model, filename = file.split(os.sep)[-3:]

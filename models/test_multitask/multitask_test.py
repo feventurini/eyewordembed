@@ -21,6 +21,7 @@ from chainer import optimizers as O
 from chainer import functions as F
 from chainer.training import extension as E
 from chainer.training import extensions
+from chainer import serializers as S
 import time
 
 import prepare_dataset as pd
@@ -78,8 +79,8 @@ if __name__ == '__main__':
 
     bins = False
     model_w2v = ['cbow','skipgram']
-    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
-    windows = [0]
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(5,n)]
+    windows = [0, 1]
     n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}
     r = O.AdaGrad
@@ -90,8 +91,10 @@ if __name__ == '__main__':
     freq = True
     surprisal = True
     out_type = 'id'
-    reg_coeffs = [0.0, 0.001]
-    loss_ratio = 1.0
+    reg_coeffs = [0.0]
+    loss_ratios = [1.0, 0.1, 0.01]
+    early_stopping = False
+
 
     configurations = []
 
@@ -99,22 +102,23 @@ if __name__ == '__main__':
         for tarball in tarballs:
             for window_eyetracking in windows:
                 for reg_coeff in reg_coeffs:
+                    for loss_ratio in loss_ratios:
                         configurations.append((model_word2vec, tarball, bins, window_eyetracking, n_layers, out_type, reg_coeff, r, lr, loss_ratio))
 
-    bins = True
-    window_eyetracking = 0
-    n_layerss = [1, 2]
-    rule_name = {O.AdaGrad: 'adagrad'}
-    r = O.AdaGrad
-    lr = 0.01
-    out_type = 'tanh'
-    reg_coeff = 0.0
-    loss_ratio = 1.0
+    # bins = True
+    # window_eyetracking = 0
+    # n_layerss = [2]
+    # rule_name = {O.AdaGrad: 'adagrad'}
+    # r = O.AdaGrad
+    # lr = 0.01
+    # out_type = 'tanh'
+    # reg_coeff = 0.0
+    # loss_ratio = 1.0
 
-    for model_word2vec in model_w2v:
-        for tarball in tarballs:
-            for n_layers in n_layerss:
-                    configurations.append((model_word2vec, tarball, bins, window_eyetracking, n_layers, out_type, reg_coeff, r, lr, loss_ratio))
+    # for model_word2vec in model_w2v:
+    #     for tarball in tarballs:
+    #         for n_layers in n_layerss:
+    #                 configurations.append((model_word2vec, tarball, bins, window_eyetracking, n_layers, out_type, reg_coeff, r, lr, loss_ratio))
 
 
     for i in configurations:
@@ -170,6 +174,15 @@ if __name__ == '__main__':
     else:
         logging.info("Building vocab...")
         model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
+
+        # trick to force the words of the dundee corpus in
+        save_corpus_count = model.corpus_count
+        model.min_count = 0
+        dundee = gensim.models.word2vec.LineSentence('../dataset/trimmed_dundee.txt')
+        model.build_vocab(dundee, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=True)
+        model.corpus_count = save_corpus_count
+        #
+
         logging.info("Vocabulary built")
         logging.info("Saving initial model with built vocabulary...")
         model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model")
@@ -243,3 +256,33 @@ if __name__ == '__main__':
 
     if not early_stopping:
         model.save(out_folder + os.sep + '{}.model'.format(name))
+
+
+    if not bins:
+        def r2_score(x, y):
+            zx = (x-np.mean(x))/np.std(x, ddof=1)
+            zy = (y-np.mean(y))/np.std(y, ddof=1)
+            r = np.sum(zx*zy)/(len(x)-1)
+            return r**2        
+
+        test_iter = EyetrackingBatchIterator(val, window_eyetracking, batchsize_eyetracking, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
+        test_set = list(test_iter.next())
+        for t in test_iter:
+            x, y = t
+            for i in x:
+                test_set[0][i] = np.concatenate((test_set[0][i],x[i]), axis=0)
+            test_set[1] = np.concatenate((test_set[1],y), axis=0)
+
+        test_set = convert(tuple(test_set), gpu)
+        inputs, target = test_set
+        predictions = model_eyetracking.inference(inputs)
+        target = std*target + mean
+        predictions = std*predictions + mean
+        # for t, i in zip(target, predictions):
+        #     print(t, i)
+        r2 = r2_score(target, predictions)
+        print('R_squared coefficient: {}'.format(r2))
+        with open(out_folder + os.sep + '{}.r2'.format(name), 'w+') as out:
+            print('R_squared coefficient: {}'.format(r2), file=out)
+
+    S.save_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)

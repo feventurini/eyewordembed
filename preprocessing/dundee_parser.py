@@ -141,7 +141,7 @@ if __name__ == '__main__':
 	avg = True
 
 	if avg:
-		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 
+		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'Tot_regres_to_dur',
 					'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 
 					'n-1_fix_dur', '2gram_surprisal', '3gram_surprisal', '4gram_surprisal', '5gram_surprisal']
 		wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 
@@ -149,12 +149,13 @@ if __name__ == '__main__':
 						'WNUM':float, 'UniversalPOS':str, 'CPOS':str, 'BNC_freq':float_or_blank_cast, 
 						'First_fix_dur':float_or_blank_cast, 'n-1_fix_dur':float_or_blank_cast,
 						'2gram_surprisal':float_or_blank_cast, '3gram_surprisal':float_or_blank_cast,
-						'4gram_surprisal':float_or_blank_cast, '5gram_surprisal':float_or_blank_cast,}
+						'4gram_surprisal':float_or_blank_cast, '5gram_surprisal':float_or_blank_cast,
+						'Tot_regres_to_dur':float_or_blank_cast}
 		csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok_gr_with_surprisal.csv'
 		save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed_gr/'
 
 	else:
-		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 
+		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'Tot_regres_to_dur',
 					'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 
 					'n-1_fix_dur', '2gram_surprisal', '3gram_surprisal', '4gram_surprisal', '5gram_surprisal', 
 					'Participant']
@@ -164,6 +165,7 @@ if __name__ == '__main__':
 						'BNC_freq':float_or_blank_cast, 'n-1_fix_dur':float_or_blank_cast, 
 						'2gram_surprisal':float_or_blank_cast, '3gram_surprisal':float_or_blank_cast,
 						'4gram_surprisal':float_or_blank_cast, '5gram_surprisal':float_or_blank_cast,
+						'Tot_regres_to_dur':float_or_blank_cast,
 						'Participant':str}
 		csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok_with_surprisal.csv'
 		save_dir = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_parsed/'

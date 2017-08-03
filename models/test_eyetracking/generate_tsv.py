@@ -27,7 +27,7 @@ def listdir(folder, filt=None):
 
 if __name__ == '__main__':
 	folder = 'result'
-	classifier = True
+	classifier = False
 
 	for subfolder in os.listdir(folder):
 		out_name = 'statistics_{}_{}_avg.tsv'.format('classifier' if classifier else 'linreg', subfolder)

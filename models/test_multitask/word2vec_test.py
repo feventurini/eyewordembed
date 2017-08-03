@@ -106,32 +106,32 @@ else:
 logging.info("Starting training...")
 report_delay = 3.0
 
-# word2vec_iter = MultitaskBatchIterator(sentences, epoch, model.corpus_count, batch_size=batchsize, maxsize=5)
+word2vec_iter = MultitaskBatchIterator(sentences, epoch, model.corpus_count, batch_size=batchsize, maxsize=5)
 
-# start_alpha = 0.025
-# end_alpha = 0.0001
-# n_examples = 0 
-# total_examples = model.corpus_count * epoch
+start_alpha = 0.025
+end_alpha = 0.0001
+n_examples = 0 
+total_examples = model.corpus_count * epoch
 
-# batch_sentences = word2vec_iter.next()
+batch_sentences = word2vec_iter.next()
 
-# n_examples += len(batch_sentences)
-# progress = 1.0 * n_examples / total_examples
-# alpha = start_alpha
-# next_alpha = start_alpha - (start_alpha - end_alpha) * progress
-# next_alpha = max(end_alpha, next_alpha)
+n_examples += len(batch_sentences)
+progress = 1.0 * n_examples / total_examples
+alpha = start_alpha
+next_alpha = start_alpha - (start_alpha - end_alpha) * progress
+next_alpha = max(end_alpha, next_alpha)
 
-# while batch_sentences:
-#     model.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=alpha, end_alpha=next_alpha)
+while batch_sentences:
+    model.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=alpha, end_alpha=next_alpha)
 
-#     batch_sentences = word2vec_iter.next()
-#     if batch_sentences:
-#         n_examples += len(batch_sentences)
-#         progress = 1.0 * n_examples / total_examples
-#         alpha = next_alpha
-#         next_alpha = start_alpha - (start_alpha - end_alpha) * progress
-#         next_alpha = max(end_alpha, next_alpha)
+    batch_sentences = word2vec_iter.next()
+    if batch_sentences:
+        n_examples += len(batch_sentences)
+        progress = 1.0 * n_examples / total_examples
+        alpha = next_alpha
+        next_alpha = start_alpha - (start_alpha - end_alpha) * progress
+        next_alpha = max(end_alpha, next_alpha)
 
-model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
+# model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
 
 model.save(out + os.sep + "std_word2vec.model")

@@ -160,7 +160,11 @@ if __name__ == '__main__':
 
 
     if not args.bins:
-        from sklearn.metrics import r2_score
+        def r2_score(x, y):
+            zx = (x-np.mean(x))/np.std(x, ddof=1)
+            zy = (y-np.mean(y))/np.std(y, ddof=1)
+            r = np.sum(zx*zy)/(len(x)-1)
+            return r**2        
 
         test_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
         test_set = list(test_iter.next())
@@ -194,5 +198,5 @@ if __name__ == '__main__':
             v = ' '.join(map(str, wi))
             f.write('%s %s\n' % (index2word[i], v))
 
-    # S.save_npz(os.path.join(args.out, name + '.model'), model)
+    S.save_npz(os.path.join(args.out, name + '.eyemodel'), model)
 

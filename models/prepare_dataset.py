@@ -9,9 +9,6 @@ import os
 from scipy.ndimage.interpolation import shift
 import nltk
 
-dundee_folder = '../dataset/dundee_parsed_gr'
-dundee_folder_bins = '../dataset/dundee_parsed'
-
 np.random.seed(111)
 
 def create_vocabulary(words, max_size=None, tokenize=False):
@@ -75,7 +72,9 @@ def normalize(values, mean=None, std=None):
 		std = np.sqrt(np.var(res))
 	return (res - mean)/std, mean, std
 
-def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, tokenize=False):
+def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, tokenize=False, target='tot'):
+	assert(target in ['tot','firstfix','firstpass','regress'])
+
 	if bins:
 		dundee_folder = '../dataset/dundee_parsed'
 		participants_path = os.path.join(dundee_folder,'Participant')
@@ -83,7 +82,16 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 		dundee_folder = '../dataset/dundee_parsed_gr'
 
 	words_path = os.path.join(dundee_folder,'WORD')
-	times_path = os.path.join(dundee_folder, 'Tot_fix_dur') #'First_pass_dur')
+	
+	if target == 'tot':
+		times_path = os.path.join(dundee_folder, 'Tot_fix_dur') #'First_pass_dur')
+	elif target == 'firstfix':
+		times_path = os.path.join(dundee_folder, 'First_fix_dur') #'First_pass_dur')
+	if target == 'firstpass':
+		times_path = os.path.join(dundee_folder, 'First_pass_dur') #'First_pass_dur')
+	if target == 'regress':
+		times_path = os.path.join(dundee_folder, 'Tot_regres_to_dur') #'First_pass_dur')
+
 	ptimes_path = os.path.join(dundee_folder, 'n-1_fix_dur')
 	pos_path = os.path.join(dundee_folder,'CPOS')
 	freq_path = os.path.join(dundee_folder,'BNC_freq')
@@ -134,7 +142,6 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 	else:
 		words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals = words[1:], tot_fix_dur[1:], lens[1:], pos[1:], tot_fix_dur[:-1], freqs[1:], surprisals[1:] 
 		# ws, ts, ls, ps, pts, fs, ss = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals)))
-
 		ws, ts, ls, ps, pts, fs, ss = extract(zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals))
 		times, mean, std = normalize(ts)
 		ptimes, _, _ = normalize(pts, mean, std)

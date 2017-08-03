@@ -2,8 +2,11 @@ import os
 import ast
 import numpy as np
 
-def extract_log(logname):
-	l = {"main/loss": [], "validation/main/loss": []}
+def extract_log(logname, classifier=False):
+	if classifier:
+		l = {"main/loss": [], "validation/main/loss": [], "main/accuracy": [], "validation/main/accuracy": []}
+	else:
+		l = {"main/loss": [], "validation/main/loss": []}
 	with open(logname,'r') as f:
 		try:
 			log = ast.literal_eval(f.read())		
@@ -23,21 +26,18 @@ def listdir(folder, filt=None):
 	return list(filter(lambda x: x.endswith(filt), l)) if filt else l
 
 if __name__ == '__main__':
-	folder = 'old/result'
+	folder = 'result'
+	classifier = True
 	result = []
+	out_name = 'statistics_{}.tsv'.format('classifier' if classifier else 'linreg')
 
 	for subfolder in os.listdir(folder):
-		#out_name = 'statistics_{}.tsv'.format(subfolder)
-		out_name = 'statistics_sample.tsv'
 
 		for filename in listdir(os.path.join(folder,subfolder), '.log'):	
-			l = extract_log(filename)
-
-			if filename.split(os.sep)[-2].startswith('multilayer') and filename.split(os.sep)[-1].split('_')[0]=='id':
+			if not filename.split(os.sep)[-1].split('_')[2] == ('classifier' if classifier else 'linreg'):
 				continue
 
-			if not 'linreg_id_adagrad_0.01lr_0.0reg_coeff' in filename:
-				continue
+			l = extract_log(filename, classifier=classifier)
 
 			filename = ' '.join([filename.split(os.sep)[-2].upper(), filename.split(os.sep)[-1]])
 			basename, _ = os.path.splitext(filename)
@@ -46,7 +46,11 @@ if __name__ == '__main__':
 				if l not in result:
 					result.append(l)
 
-		# result = sorted(result, key=lambda x: (np.mean(x['validation/main/loss']), x['validation/main/loss'][-1]))
+	if classifier:
+		result = sorted(result, key=lambda x: (np.mean(x['validation/main/accuracy']), x['validation/main/accuracy'][-1]), reverse=True) 
+	else:
+		result = sorted(result, key=lambda x: (np.mean(x['validation/main/loss']),x['validation/main/loss'][-1]))
+	
 	with open(out_name, 'w+') as out:
 		for i in result:
 			print(i['name'], file=out)
