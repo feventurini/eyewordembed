@@ -46,7 +46,7 @@ for k, i in enumerate(configurations):
 i = int(sys.argv[1]) - 1 
 model_word2vec, tarball = configurations[i]
 
-out = os.path.join('test_multitask/result', tarball.split('.')[0], model_word2vec)
+out = os.path.join('test_multitask/result_final', tarball.split('.')[0], model_word2vec)
 train_tarball = os.path.join(tarball_folder, tarball)
 
 print('# unit: {}'.format(unit))
@@ -81,6 +81,7 @@ max_vocab_size = 400000
 sub_sampling = 0.001
 n_workers = 3
 cbow_mean = 1 # 1:mean, 0:sum
+batchsize = 100000
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -97,6 +98,15 @@ if os.path.isfile(vocab + os.sep + "init_vocab_" + os.path.basename(train_tarbal
 else:
     logging.info("Building vocab...")
     model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
+
+    # trick to force the words of the dundee corpus in
+    save_corpus_count = model.corpus_count
+    model.min_count = 0
+    dundee = gensim.models.word2vec.LineSentence('../dataset/trimmed_dundee.txt')
+    model.build_vocab(dundee, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=True)
+    model.corpus_count = save_corpus_count
+    #
+
     logging.info("Vocabulary built")
     logging.info("Saving initial model with built vocabulary...")
     if not os.path.isdir(vocab):

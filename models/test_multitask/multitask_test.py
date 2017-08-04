@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     bins = False
     model_w2v = ['cbow','skipgram']
-    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(5,n)]
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
     windows = [0, 1]
     n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}
@@ -92,17 +92,17 @@ if __name__ == '__main__':
     surprisal = True
     out_type = 'id'
     reg_coeffs = [0.0]
-    loss_ratios = [1.0, 0.1, 0.01]
+    loss_ratios = [1.0]
     early_stopping = False
 
 
     configurations = []
 
     for model_word2vec in model_w2v:
-        for tarball in tarballs:
-            for window_eyetracking in windows:
-                for reg_coeff in reg_coeffs:
-                    for loss_ratio in loss_ratios:
+        for window_eyetracking in windows:
+            for reg_coeff in reg_coeffs:
+                for loss_ratio in loss_ratios:
+                    for tarball in tarballs:
                         configurations.append((model_word2vec, tarball, bins, window_eyetracking, n_layers, out_type, reg_coeff, r, lr, loss_ratio))
 
     # bins = True

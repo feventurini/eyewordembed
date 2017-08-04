@@ -26,8 +26,8 @@ def listdir(folder, filt=None):
 	return list(filter(lambda x: x.endswith(filt), l)) if filt else l
 
 if __name__ == '__main__':
-	folder = 'result'
-	classifier = True
+	folder = 'result_test'
+	classifier = False
 	result = []
 	out_name = 'statistics_{}.tsv'.format('classifier' if classifier else 'linreg')
 

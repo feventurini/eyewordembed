@@ -28,7 +28,7 @@ out_type = 'ns'
 vocab_folder = 'init_vocab'
 
 tarball_folder = '../dataset/downsampled_gigaword'
-dundee = '../dataset/dundee.txt'
+dundee = '../dataset/trimmed_dundee.txt'
 n = 10
 
 model_w2v = ['skipgram', 'cbow']
@@ -47,7 +47,7 @@ for k, i in enumerate(configurations):
 i = int(sys.argv[1]) - 1 
 model_word2vec, tarball = configurations[i]
 
-out = os.path.join('test_multitask_limit_vocab/result', tarball.split('.')[0], model_word2vec)
+out = os.path.join('test_multitask_limit_vocab/result_final', tarball.split('.')[0], model_word2vec)
 train_tarball = os.path.join(tarball_folder, tarball)
 
 print('# unit: {}'.format(unit))
@@ -80,7 +80,8 @@ alpha = 0.025
 min_count = 0
 max_vocab_size = 400000
 sub_sampling = 0.001
-n_workers = 3
+batchsize = 100000
+n_workers = 20
 cbow_mean = 1 # 1:mean, 0:sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -110,32 +111,32 @@ model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_voc
 
 sentences = gensim.models.word2vec.LineSentence(train_tarball)
 
-# word2vec_iter = MultitaskBatchIterator(sentences, epoch, model.corpus_count, batch_size=batchsize, maxsize=5)
+word2vec_iter = MultitaskBatchIterator(sentences, epoch, model_2.corpus_count, batch_size=batchsize, maxsize=5)
 
-# start_alpha = 0.025
-# end_alpha = 0.0001
-# n_examples = 0 
-# total_examples = model.corpus_count * epoch
+start_alpha = 0.025
+end_alpha = 0.0001
+n_examples = 0 
+total_examples = model.corpus_count * epoch
 
-# batch_sentences = word2vec_iter.next()
+batch_sentences = word2vec_iter.next()
 
-# n_examples += len(batch_sentences)
-# progress = 1.0 * n_examples / total_examples
-# alpha = start_alpha
-# next_alpha = start_alpha - (start_alpha - end_alpha) * progress
-# next_alpha = max(end_alpha, next_alpha)
+n_examples += len(batch_sentences)
+progress = 1.0 * n_examples / total_examples
+alpha = start_alpha
+next_alpha = start_alpha - (start_alpha - end_alpha) * progress
+next_alpha = max(end_alpha, next_alpha)
 
-# while batch_sentences:
-#     model.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=alpha, end_alpha=next_alpha)
+while batch_sentences:
+    model.train(batch_sentences, epochs=1, total_examples=len(batch_sentences), queue_factor=2, start_alpha=alpha, end_alpha=next_alpha)
 
-#     batch_sentences = word2vec_iter.next()
-#     if batch_sentences:
-#         n_examples += len(batch_sentences)
-#         progress = 1.0 * n_examples / total_examples
-#         alpha = next_alpha
-#         next_alpha = start_alpha - (start_alpha - end_alpha) * progress
-#         next_alpha = max(end_alpha, next_alpha)
+    batch_sentences = word2vec_iter.next()
+    if batch_sentences:
+        n_examples += len(batch_sentences)
+        progress = 1.0 * n_examples / total_examples
+        alpha = next_alpha
+        next_alpha = start_alpha - (start_alpha - end_alpha) * progress
+        next_alpha = max(end_alpha, next_alpha)
 
-model.train(sentences, total_words=None, epochs=model.iter, total_examples=model_2.corpus_count, queue_factor=2, report_delay=report_delay)
+# model.train(sentences, total_words=None, epochs=model.iter, total_examples=model_2.corpus_count, queue_factor=2, report_delay=report_delay)
 
 model.save(out + os.sep + "std_limit_vocab_word2vec.model")
