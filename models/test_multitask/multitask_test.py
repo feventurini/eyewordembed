@@ -80,7 +80,7 @@ if __name__ == '__main__':
     bins = False
     model_w2v = ['cbow','skipgram']
     tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
-    windows = [0, 1]
+    windows = [0]
     n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}
     r = O.AdaGrad
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     freq = True
     surprisal = True
     out_type = 'id'
-    reg_coeffs = [0.0]
+    reg_coeffs = [0.0, 0.001]
     loss_ratios = [1.0]
     early_stopping = False
 
@@ -178,7 +178,7 @@ if __name__ == '__main__':
         # trick to force the words of the dundee corpus in
         save_corpus_count = model.corpus_count
         model.min_count = 0
-        dundee = gensim.models.word2vec.LineSentence('../dataset/trimmed_dundee.txt')
+        dundee = gensim.models.word2vec.LineSentence('../dataset/dundee_vocab.txt')
         model.build_vocab(dundee, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=True)
         model.corpus_count = save_corpus_count
         #
@@ -241,10 +241,10 @@ if __name__ == '__main__':
 
     if early_stopping:
         if bins:
-            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+            trainer.extend(early_stopping_gensim(model, model_eyetracking, out_folder + os.sep + '{}'.format(name)), 
                 trigger=chainer.training.triggers.MaxValueTrigger('validation/main/accuracy', trigger=(1, 'epoch')))
         else:
-            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+            trainer.extend(early_stopping_gensim(model, model_eyetracking, out_folder + os.sep + '{}'.format(name)), 
                 trigger=chainer.training.triggers.MinValueTrigger('validation/main/loss', trigger=(1, 'epoch')))
     
     w2v_e = Word2VecExtension(word2vec_iter, model_eyetracking, model)
@@ -256,7 +256,7 @@ if __name__ == '__main__':
 
     if not early_stopping:
         model.save(out_folder + os.sep + '{}.model'.format(name))
-
+        S.save_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)
 
     if not bins:
         def r2_score(x, y):
@@ -285,4 +285,4 @@ if __name__ == '__main__':
         with open(out_folder + os.sep + '{}.r2'.format(name), 'w+') as out:
             print('R_squared coefficient: {}'.format(r2), file=out)
 
-    S.save_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)
+ 

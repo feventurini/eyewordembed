@@ -130,7 +130,7 @@ class DundeeTreebankParser():
 					if self.previous == row[self.map['WNUM']]:
 						continue
 					self.previous = row[self.map['WNUM']]
-					l.append(row[self.map["WORD"]])
+					l.append(row[self.map["Word"]])
 				print(' '.join(l), file=o)
 
 
@@ -142,10 +142,10 @@ if __name__ == '__main__':
 
 	if avg:
 		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'Tot_regres_to_dur',
-					'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 
+					'WLEN', 'WORD', 'Word', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 
 					'n-1_fix_dur', '2gram_surprisal', '3gram_surprisal', '4gram_surprisal', '5gram_surprisal']
 		wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 
-						'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 
+						'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'Word':string_lower_nopunct_cast, 
 						'WNUM':float, 'UniversalPOS':str, 'CPOS':str, 'BNC_freq':float_or_blank_cast, 
 						'First_fix_dur':float_or_blank_cast, 'n-1_fix_dur':float_or_blank_cast,
 						'2gram_surprisal':float_or_blank_cast, '3gram_surprisal':float_or_blank_cast,
@@ -156,11 +156,11 @@ if __name__ == '__main__':
 
 	else:
 		wantedSet = ['First_pass_dur', 'First_fix_dur', 'Mean_fix_dur', 'Tot_fix_dur', 'Tot_regres_to_dur',
-					'WLEN', 'WORD', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 
+					'WLEN', 'WORD', 'Word', 'WNUM', 'UniversalPOS', 'CPOS', 'BNC_freq', 
 					'n-1_fix_dur', '2gram_surprisal', '3gram_surprisal', '4gram_surprisal', '5gram_surprisal', 
 					'Participant']
 		wantedParsing = {'First_pass_dur':float_or_blank_cast, 'Mean_fix_dur':float_or_blank_cast, 
-						'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 
+						'Tot_fix_dur':float_or_blank_cast, 'WLEN':float, 'WORD':string_lower_nopunct_cast, 'Word':string_lower_nopunct_cast, 
 						'WNUM':float, 'UniversalPOS':str, 'CPOS':str, 'First_fix_dur':float_or_blank_cast, 
 						'BNC_freq':float_or_blank_cast, 'n-1_fix_dur':float_or_blank_cast, 
 						'2gram_surprisal':float_or_blank_cast, '3gram_surprisal':float_or_blank_cast,
@@ -178,6 +178,9 @@ if __name__ == '__main__':
 
 
 	for k,v in result.items():
+		if k == 'WORD':
+			util.save(v, os.path.join(save_dir,'WORD_untokenized'))
+			continue
 		util.save(v, os.path.join(save_dir,k))
 	dtp.fileToText(csv_path, os.path.join(save_dir,'dundee.txt'))
 

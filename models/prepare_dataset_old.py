@@ -11,8 +11,14 @@ import nltk
 
 np.random.seed(111)
 
-def create_vocabulary(words, max_size=None):
-	tokenized_words = filter(lambda x: x!='', words)
+def create_vocabulary(words, max_size=None, tokenize=False):
+	if tokenize:
+		tokenized_words = []
+		for w in filter(lambda x: x!='', words):
+			tokenized_words += nltk.word_tokenize(w)
+		input(len(tokenized_words))
+	else:
+		tokenized_words = filter(lambda x: x!='', words)
 
 	counter = collections.Counter(tokenized_words)
 	counter = sorted(counter.most_common(max_size))
@@ -93,9 +99,9 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 	surprisal_path = os.path.join(dundee_folder, '{}gram_surprisal'.format(surprisal_order))
 	
 	words = util.load(words_path)
-
+	input(len(words))
 	if not word2id:
-		word2id, _ = create_vocabulary(words)
+		word2id, _ = create_vocabulary(words, tokenize=tokenize)
 		# word2id, _ = create_vocabulary(words)
 
 	lens = [len(w) for w in words]
@@ -107,9 +113,21 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 	prev_fix_dur = util.load(ptimes_path)
 	freqs = util.load(freq_path)
 	surprisals = util.load(surprisal_path)
-
+	
 	def extract(elements):
-		return zip(*filter(lambda x: x[0] in word2id, elements))
+		if not tokenize:
+			return zip(*filter(lambda x: x[0] in word2id, elements))
+		else:
+			result = []	
+			for e in elements:
+				temp = list(e)
+				word = e[0]
+				sub_words = nltk.word_tokenize(word)
+				if not all(map(lambda x: x in word2id, sub_words)):
+					continue
+				for w in sub_words:
+					result.append(tuple([w] + temp[1:]))
+			return zip(*result)
 
 	if bins:
 		participants = util.load(participants_path)

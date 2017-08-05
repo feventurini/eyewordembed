@@ -33,7 +33,7 @@ from multitask_batch_iter import MultitaskBatchIterator
 from config import *
 from eyetracking import *
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s\r', level=logging.WARNING)
 
 class Word2VecExtension(E.Extension):
     trigger = 1, 'iteration'
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     bins = False
     model_w2v = ['cbow','skipgram']
     tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
-    windows = [0, 1]
+    windows = [0]
     n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}
     r = O.AdaGrad
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     else:
         raise Exception('Unknown output type: {}'.format(out_type))
 
-    dundee = '../dataset/trimmed_dundee.txt'
+    dundee = '../dataset/dundee_vocab.txt'
     sentences = gensim.models.word2vec.LineSentence(dundee)
 
     model = gensim.models.word2vec.Word2Vec(sentences=None, size=n_units, alpha=alpha, window=window, min_count=0, max_vocab_size=max_vocab_size, 
@@ -184,9 +184,18 @@ if __name__ == '__main__':
     else:
         vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True, tokenize=True)
 
-    model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
-    model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
     sentences = gensim.models.word2vec.LineSentence(train_tarball)
+
+    if os.path.isfile(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model"):
+        model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
+        model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model"))
+    else:
+        logging.info("Building vocab...")
+        model_2 = gensim.models.word2vec.Word2Vec(sentences=None, min_count=min_count, sample=sub_sampling)
+        model_2.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False) 
+        logging.info("Vocabulary built")
+        logging.info("Saving initial model with built vocabulary...")
+        model_2.save(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model")
 
     print('Data samples eyetracking: %d' % len(train))
     print('Data samples word2vec:\t%d' % model_2.corpus_count)
@@ -239,10 +248,10 @@ if __name__ == '__main__':
 
     if early_stopping:
         if bins:
-            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + 'limit_vocab_{}.model'.format(name)), 
+            trainer.extend(early_stopping_gensim(model, model_eyetracking, out_folder + os.sep + 'limit_vocab_{}'.format(name)), 
                 trigger=chainer.training.triggers.MaxValueTrigger('validation/main/accuracy', trigger=(1, 'epoch')))
         else:
-            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+            trainer.extend(early_stopping_gensim(model, model_eyetracking, out_folder + os.sep + '{}'.format(name)), 
                 trigger=chainer.training.triggers.MinValueTrigger('validation/main/loss', trigger=(1, 'epoch')))
 
     w2v_e = Word2VecExtension(word2vec_iter, model_eyetracking, model, epoch_ratio=epoch_ratio)
@@ -254,6 +263,7 @@ if __name__ == '__main__':
 
     if not early_stopping:
         model.save(out_folder + os.sep + 'limit_vocab_{}.model'.format(name))
+        S.save_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)
 
     if not bins:
         def r2_score(x, y):
@@ -282,4 +292,3 @@ if __name__ == '__main__':
         with open(out_folder + os.sep + '{}.r2'.format(name), 'w+') as out:
             print('R_squared coefficient: {}'.format(r2), file=out)
 
-    S.save_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)

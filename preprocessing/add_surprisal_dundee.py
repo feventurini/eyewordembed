@@ -9,8 +9,11 @@ import dundee_parser as dp
 import kenlm
 import math
 
+def stripPunctuation(x):
+	return x.strip(string.punctuation)
+
 if __name__ == '__main__':
-	avg = False
+	avg = True
 
 	if avg:
 		csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok_gr.csv'
@@ -53,11 +56,20 @@ if __name__ == '__main__':
 					if sentence_num != row[dtp.map['SentenceID']]:
 						sentence_num = row[dtp.map['SentenceID']]
 						# print(sentence)
-						scores = list(model.full_scores(' '.join(sentence)))
-						for s,ro in zip(scores[:-1], rows):
+						trimmed_sentence = list(map(stripPunctuation, list(filter(lambda s: any(list(map(lambda c: c.isalpha(), s))), sentence))))
+						scores = list(model.full_scores(' '.join(trimmed_sentence)))
+						j = 0
+						for i in range(len(rows)):
+							ro = rows[i]
+							if not any(list(map(lambda c: c.isalpha(), sentence[i]))):
+								ro.append(0)
+								out_csv.writerow(ro)
+								continue	
+							s = scores[j]
 							ro.append(-(s[0]/math.log(e, 10)))
 							#input(ro)
 							out_csv.writerow(ro)
+							j += 1
 						sentence = []
 						rows = []
 

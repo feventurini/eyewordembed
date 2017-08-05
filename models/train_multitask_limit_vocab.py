@@ -72,7 +72,7 @@ class Word2VecExtension(E.Extension):
 if __name__ == '__main__':
     name = 'multitask_limit_vocab_gigaword_' + str(n_units) + 'units_' + model_word2vec + '_' + ('classifier' if bins else 'linreg')  + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 
-    dundee = '../dataset/trimmed_dundee.txt'
+    dundee = '../dataset/dundee_vocab.txt'
     sentences = gensim.models.word2vec.LineSentence(dundee)
 
     model = gensim.models.word2vec.Word2Vec(sentences=None, size=n_units, alpha=alpha, window=window, min_count=0, max_vocab_size=max_vocab_size, 
@@ -98,9 +98,19 @@ if __name__ == '__main__':
     else:
         vocab, pos2id, train, val, test, mean, std = pd.load_dataset(model.wv.vocab, gensim=True, tokenize=True)
 
-    model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
-    model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
     sentences = gensim.models.word2vec.LineSentence(train_tarball)
+
+    if os.path.isfile(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model"):
+        model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
+        model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model"))
+    else:
+        logging.info("Building vocab...")
+        model_2 = gensim.models.word2vec.Word2Vec(sentences=None, min_count=min_count, sample=sub_sampling)
+        model_2.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False) 
+        logging.info("Vocabulary built")
+        logging.info("Saving initial model with built vocabulary...")
+        model_2.save(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model")
+
 
     print('Data samples eyetracking: %d' % len(train))
     print('Data samples word2vec:\t%d' % model_2.corpus_count)
