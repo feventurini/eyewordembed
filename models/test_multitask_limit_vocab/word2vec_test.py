@@ -106,10 +106,18 @@ else:
 logging.info("Starting training...")
 report_delay = 3.0
 
-model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
-model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + ".model"))
-
 sentences = gensim.models.word2vec.LineSentence(train_tarball)
+
+if os.path.isfile(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model"):
+    model_2 = gensim.models.word2vec.Word2Vec(sentences=None)
+    model_2.reset_from(gensim.models.Word2Vec.load(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model"))
+else:
+    logging.info("Building vocab...")
+    model_2 = gensim.models.word2vec.Word2Vec(sentences=None, min_count=min_count, sample=sub_sampling)
+    model_2.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False) 
+    logging.info("Vocabulary built")
+    logging.info("Saving initial model with built vocabulary...")
+    model_2.save(vocab_folder + os.sep + "init_vocab_no_dundee_" + os.path.basename(train_tarball) + ".model")
 
 word2vec_iter = MultitaskBatchIterator(sentences, epoch, model_2.corpus_count, batch_size=batchsize, maxsize=5)
 
