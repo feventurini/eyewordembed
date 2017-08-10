@@ -20,7 +20,7 @@ if __name__ == '__main__':
 	else:
 		csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok.csv'
 
-	final_out = csv_path[:-4] + '_with_surprisal.csv'
+	final_out = csv_path[:-4] + '_with_surprisal_mono.csv'
 	dtp = dp.DundeeTreebankParser()
 
 	for i in range(2,6):
@@ -53,28 +53,53 @@ if __name__ == '__main__':
 				for row in r:
 					if sentence_num == -1:
 						sentence_num = row[dtp.map['SentenceID']]
+						wnum = float(row[dtp.map['WNUM']])
 					if sentence_num != row[dtp.map['SentenceID']]:
 						sentence_num = row[dtp.map['SentenceID']]
 						# print(sentence)
 						trimmed_sentence = list(map(stripPunctuation, list(filter(lambda s: any(list(map(lambda c: c.isalpha(), s))), sentence))))
 						scores = list(model.full_scores(' '.join(trimmed_sentence)))
 						j = 0
+
+						to_write = []
 						for i in range(len(rows)):
 							ro = rows[i]
 							if not any(list(map(lambda c: c.isalpha(), sentence[i]))):
 								ro.append(0)
-								out_csv.writerow(ro)
+								to_write.append(ro)
 								continue	
 							s = scores[j]
 							ro.append(-(s[0]/math.log(e, 10)))
 							#input(ro)
-							out_csv.writerow(ro)
+							to_write.append(ro)
 							j += 1
+
+						wnum = -1
+						for i in range(len(to_write)):
+							ro = to_write[i]
+							new_wnum = float(ro[dtp.map['WNUM']])
+							word = ro[dtp.map['Word']].lower()
+							
+							if wnum == -1:
+								wnum = new_wnum
+								continue
+
+							if wnum == new_wnum and any(list(map(lambda c: c.isalpha(), word))):
+								prev_ro = to_write[i-1]
+								sum_surprisal = prev_ro[-1] + ro[-1]
+								ro[-1] = sum_surprisal
+								prev_ro[-1] = sum_surprisal
+
+							wnum = new_wnum
+						for ro in to_write:	
+							out_csv.writerow(ro)
+							
 						sentence = []
 						rows = []
 
 					sentence.append(row[dtp.map['Word']].lower())
 					rows.append(row)
+
 
 
 

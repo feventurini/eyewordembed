@@ -16,7 +16,6 @@ def create_vocabulary(words, max_size=None, tokenize=False):
 		tokenized_words = []
 		for w in filter(lambda x: x!='', words):
 			tokenized_words += nltk.word_tokenize(w)
-		input(len(tokenized_words))
 	else:
 		tokenized_words = filter(lambda x: x!='', words)
 
@@ -82,7 +81,7 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 	else:
 		dundee_folder = '../dataset/dundee_parsed_gr'
 
-	words_path = os.path.join(dundee_folder,'Word')
+	words_path = os.path.join(dundee_folder,'WORD_untokenized')
 	
 	if target == 'tot':
 		times_path = os.path.join(dundee_folder, 'Tot_fix_dur') #'First_pass_dur')
@@ -99,7 +98,6 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 	surprisal_path = os.path.join(dundee_folder, '{}gram_surprisal'.format(surprisal_order))
 	
 	words = util.load(words_path)
-	input(len(words))
 	if not word2id:
 		word2id, _ = create_vocabulary(words, tokenize=tokenize)
 		# word2id, _ = create_vocabulary(words)
@@ -115,6 +113,7 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 	surprisals = util.load(surprisal_path)
 	
 	def extract(elements):
+		c=0
 		if not tokenize:
 			return zip(*filter(lambda x: x[0] in word2id, elements))
 		else:
@@ -123,10 +122,13 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 				temp = list(e)
 				word = e[0]
 				sub_words = nltk.word_tokenize(word)
+				if len(sub_words)>1:
+					c+=1
 				if not all(map(lambda x: x in word2id, sub_words)):
 					continue
 				for w in sub_words:
 					result.append(tuple([w] + temp[1:]))
+			input(c)
 			return zip(*result)
 
 	if bins:
@@ -145,6 +147,7 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 		words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals = words[1:], tot_fix_dur[1:], lens[1:], pos[1:], tot_fix_dur[:-1], freqs[1:], surprisals[1:] 
 		# ws, ts, ls, ps, pts, fs, ss = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals)))
 		ws, ts, ls, ps, pts, fs, ss = extract(zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals))
+		input(len(ws))
 		times, mean, std = normalize(ts)
 		ptimes, _, _ = normalize(pts, mean, std)
 
@@ -205,4 +208,4 @@ def create_reference_table():
 
 if __name__ == '__main__':
 	# create_reference_table()
-	_ = load_dataset()
+	_ = load_dataset(tokenize=True)

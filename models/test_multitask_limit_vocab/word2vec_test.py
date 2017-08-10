@@ -22,17 +22,17 @@ import datetime
 
 unit = 100
 window = 5
-epoch = 20
+epoch = 10
 model_types = ['cbow', 'skipgram']
 out_type = 'ns'
 vocab_folder = 'init_vocab'
 
 tarball_folder = '../dataset/downsampled_gigaword'
-dundee = '../dataset/trimmed_dundee.txt'
+dundee = '../dataset/dundee_vocab.txt'
 n = 10
 
 model_w2v = ['skipgram', 'cbow']
-tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
+tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(2,n)]
 
 configurations = []
 

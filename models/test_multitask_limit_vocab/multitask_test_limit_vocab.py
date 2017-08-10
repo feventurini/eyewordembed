@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     bins = False
     model_w2v = ['cbow','skipgram']
-    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(4,n)]
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(2,n)]
     windows = [0]
     n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}

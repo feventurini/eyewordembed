@@ -88,7 +88,7 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 		times_path = os.path.join(dundee_folder, 'Tot_regres_to_dur') #'First_pass_dur')
 
 	ptimes_path = os.path.join(dundee_folder, 'n-1_fix_dur')
-	pos_path = os.path.join(dundee_folder,'CPOS')
+	pos_path = os.path.join(dundee_folder,'UniversalPOS')
 	freq_path = os.path.join(dundee_folder,'BNC_freq')
 	surprisal_path = os.path.join(dundee_folder, '{}gram_surprisal'.format(surprisal_order))
 	
@@ -102,32 +102,40 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 
 	pos = util.load(pos_path)
 	pos2id, _= create_vocabulary(pos)
+	
 
-	tot_fix_dur = util.load(times_path)
+	targets = util.load(times_path)
 	prev_fix_dur = util.load(ptimes_path)
 	freqs = util.load(freq_path)
 	surprisals = util.load(surprisal_path)
 
-	def extract(elements):
+	def extract_vocab(elements):
 		return zip(*filter(lambda x: x[0] in word2id, elements))
+
+	def extract_remove_outliers(elements):
+		return zip(*filter(lambda x: x[1]<=3.0 and x[1]>=-3.0, elements))
 
 	if bins:
 		participants = util.load(participants_path)
-		binned_times, n_participants, n_classes = create_bins(tot_fix_dur, participants)
+		binned_times, n_participants, n_classes = create_bins(targets, participants)
 		# prev_binned_times, n_participants, n_classes = create_bins(prev_fix_dur, participants)
 
-		words, binned_times, lens, pos, prev_binned_times, freqs, surprisals = words[1:], binned_times[1:], lens[1:], pos[1:], binned_times[:-1], freqs[1:], surprisals[1:]
+		# words, binned_times, lens, pos, prev_binned_times, freqs, surprisals = words[1:], binned_times[1:], lens[1:], pos[1:], binned_times[:-1], freqs[1:], surprisals[1:]
 		# ws, ts, ls, ps, pts, fs, ss = zip(*filter(lambda x: x[0] in word2id, zip(words, binned_times, lens, pos, prev_binned_times, freqs, surprisals)))
 
-		ws, ts, ls, ps, pts, fs, ss = extract(zip(words, binned_times, lens, pos, prev_binned_times, freqs, surprisals))	
+		ws, ts, ls, ps, pts, fs, ss = extract_vocab(zip(words, binned_times, lens, pos, prev_binned_times, freqs, surprisals))	
 		times = np.array(ts).reshape((-1,1))
 		ptimes = np.array(pts).reshape((-1,1))
 	
 	else:
-		words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals = words[1:], tot_fix_dur[1:], lens[1:], pos[1:], tot_fix_dur[:-1], freqs[1:], surprisals[1:] 
-		# ws, ts, ls, ps, pts, fs, ss = zip(*filter(lambda x: x[0] in word2id, zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals)))
-		ws, ts, ls, ps, pts, fs, ss = extract(zip(words, tot_fix_dur, lens, pos, prev_fix_dur, freqs, surprisals))
-		times, mean, std = normalize(ts)
+		# words, targets, lens, pos, prev_fix_dur, freqs, surprisals = words[1:], targets[1:], lens[1:], pos[1:], targets[:-1], freqs[1:], surprisals[1:] 
+		# ws, ts, ls, ps, pts, fs, ss = zip(*filter(lambda x: x[0] in word2id, zip(words, targets, lens, pos, prev_fix_dur, freqs, surprisals)))
+		ws, ts, ls, ps, pts, fs, ss = extract_vocab(zip(words, targets, lens, pos, prev_fix_dur, freqs, surprisals))
+		
+		ts, mean, std = normalize(ts)
+		ws, ts, ls, ps, pts, fs, ss = extract_remove_outliers(zip(ws, ts, ls, ps, pts, fs, ss))
+		times = ts
+		# times, mean, std = normalize(ts)
 		ptimes, _, _ = normalize(pts, mean, std)
 
 	if not gensim:
@@ -135,23 +143,23 @@ def load_dataset(word2id=None, gensim=False, bins=False, surprisal_order=5, toke
 	else:
 		words_array = np.array([word2id[w].index for w in ws]).reshape((-1,1))
 
-	tot_fix_dur = util.load(times_path)
 	freqs = util.load(freq_path)
 
 	pos_array = np.array([pos2id[p] for p in ps]).reshape((-1,1))
+	# lens_array, _, _ = normalize(ls)
+	# freqs_array, _, _ = normalize(fs)
+	# surprisals_array, _, _ = normalize(ss)
+
 	lens_array = np.array(ls).reshape((-1,1))
 	freqs_array = np.array(fs).reshape((-1,1))
-	# freqs_array, _, _ = normalize(freqs_array)
 	surprisals_array = np.array(ss).reshape((-1,1))
-	# surprisals_array, _, _ = normalize(surprisals_array)
 
-	
 	dataset = np.hstack((words_array, times, lens_array, pos_array, ptimes, freqs_array, surprisals_array))
 	
 	np.random.shuffle(dataset)
-	# train, val, test = np.split(dataset, [int(.8*len(dataset)), int(.9*len(dataset))])
-	train, val = np.split(dataset, [int(.9*len(dataset))])
-	test = []
+	train, val, test = np.split(dataset, [int(.8*len(dataset)), int(.9*len(dataset))])
+	# train, val = np.split(dataset, [int(.9*len(dataset))])
+	# test = []
 
 	if bins:
 		return word2id, pos2id, n_classes, n_participants, train, val, test

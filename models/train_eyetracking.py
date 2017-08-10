@@ -129,7 +129,7 @@ if __name__ == '__main__':
     if args.bins:
         model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, n_pos=n_pos, n_pos_units=50)
     else:
-        model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, n_pos=n_pos, n_pos_units=50, loss_ratio=1.0)
+        model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=200, window=args.window, n_layers=args.layers, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, n_pos=n_pos, n_pos_units=10, loss_ratio=1.0)
 
     train_iter = EyetrackingBatchIterator(train, args.window, batch_size, repeat=True, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
     val_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
@@ -160,13 +160,15 @@ if __name__ == '__main__':
 
 
     if not args.bins:
-        def r2_score(x, y):
+        p = model.outlayer.W.shape[1]
+        n = len(np.vstack((train,val)))
+        def r2_score(x, y, n, p):
             zx = (x-np.mean(x))/np.std(x, ddof=1)
             zy = (y-np.mean(y))/np.std(y, ddof=1)
             r = np.sum(zx*zy)/(len(x)-1)
-            return r**2        
+            return r**2 - (1 - r**2) * (p)/(n-p-1)       
 
-        test_iter = EyetrackingBatchIterator(val, args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
+        test_iter = EyetrackingBatchIterator(np.vstack((train,val)), args.window, batch_size, repeat=False, shuffle=True, wlen=args.wlen, pos=args.pos, prev_fix=args.prev_fix, freq=args.freq, surprisal=args.surprisal, bins=args.bins)
         test_set = list(test_iter.next())
         for t in test_iter:
             x, y = t
@@ -181,7 +183,7 @@ if __name__ == '__main__':
         predictions = std*predictions + mean
         # for t, i in zip(target, predictions):
         #     print(t, i)
-        r2 = r2_score(target, predictions)
+        r2 = r2_score(target, predictions, n, p)
         print('R_squared coefficient: {}'.format(r2))
 
     wl = '_wl' if args.wlen else ''

@@ -159,6 +159,7 @@ class EyetrackingLinreg(chainer.Chain):
         self.surprisal = surprisal
         self.loss_ratio = loss_ratio
         self.n_layers = n_layers
+        self.n_pos = n_pos
 
         with self.init_scope():
             self.embed = L.EmbedID(n_vocab, n_units, initialW=I.Uniform(1. / n_units))
@@ -166,8 +167,12 @@ class EyetrackingLinreg(chainer.Chain):
             n_inputs = n_units
             if self.pos: 
                 assert(n_pos)
-                self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
-                n_inputs += n_pos_units
+                ## embedding
+                # self.embed_pos = L.EmbedID(n_pos, n_pos_units, initialW=I.Uniform(1. / n_pos_units))
+                # n_inputs += n_pos_units
+                
+                ## one-hot
+                n_inputs += n_pos
 
             if self.prev_fix:
                 n_inputs += 1
@@ -202,9 +207,15 @@ class EyetrackingLinreg(chainer.Chain):
         variables.append(e_w)
 
         if self.pos:
-            p = chainer.Variable(inputs['pos'], name='pos_tags')
-            e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
-            e_p.name = 'pos_embeddings'
+            ## embedding
+            # p = chainer.Variable(inputs['pos'], name='pos_tags')
+            # e_p = F.reshape(self.embed_pos(p), (-1,w.shape[1]*self.n_pos_units))
+            # e_p.name = 'pos_embeddings'
+            
+            ## one-hot
+            p = chainer.Variable(toOneHot(inputs['pos'],self.n_pos), name='pos_tags')
+            e_p = F.reshape(p, (-1,w.shape[1]*self.n_pos))
+            e_p.name = 'postags_onehot'
             variables.append(e_p)
 
         if self.wlen:

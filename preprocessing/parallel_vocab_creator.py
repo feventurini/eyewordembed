@@ -5,21 +5,33 @@ import os
 import pickle
 import gzip
 import logging
-	
+import gensim
+from queue import Queue
+import threading
+    
+    
 import sys
 sys.path.insert(0, '../utilities')
 import timing
 import util
 
+window = 5
 def log_result(result):
     l.acquire()
-    counter.update(result)
+    vocab_context.update(result)
     l.release()
 
-def countInFile(filename):
-    logger.debug(filename)
-    with open(filename) as f:
-        return Counter(chain.from_iterable(map(str.split, f)))
+def countInBatch(batch, vocab):
+    result = []
+    for line in batch:
+        for i in range(len(line)):
+            if line[i] in result:
+                continue
+            context = line[max(0,i-window): min(len(line),i+window+1)]
+            if any([d in context for d in vocab]):
+                result.append(line[i])
+    logging.info('Batch done...')
+    return result
 
 def trimVocab(counter, frequency, max_size):
     unk_count = 0
@@ -41,25 +53,61 @@ def load(path):
 
 
 if __name__ == '__main__':
+    vocab = set()
+    with open('/media/fede/fedeProSD/eyewordembed/dataset/dundee_vocab.txt') as f:
+        for line in f:
+            vocab.update(line.split())
+
+    src_file = "/media/fede/fedeProSD/eyewordembed/dataset/downsampled_gigaword/tokenized_gigaword_1024.tar.bz2"
+    sentences = gensim.models.word2vec.LineSentence(src_file)
+
+    queue = Queue(maxsize=5)
+    closed_queue = False
+    batch_size = 10000
+
+    def _batchFiller():
+        counter = 0
+        batch = list()
+        for l in sentences:
+            batch.append(l)
+            counter += 1
+            if len(batch) == batch_size:
+                queue.put(batch, block=True)
+                batch = list()
+        queue.put(batch, block=True)
+        for i in range(4):
+            queue.put(None)
+        closed_queue = True
+
+    filler_thread = threading.Thread(target=_batchFiller) 
+    filler_thread.daemon = True
+    filler_thread.start()
+
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    src_folder = "/media/fede/fedeProSD/eyewordembed/dataset/training_decomp"
+    if not os.path.isdir('../vocab'):
+        os.makedirs('../vocab')
 
     os.chdir('../vocab')
+
     if not os.path.isfile('word_count.pklz'):
         pool = multiprocessing.Pool(4)
-        counter = Counter()
-        logger.info("Counting words from src folder: '" + src_folder + "'")
+        vocab_context = Counter()
+        logger.info("Creating vocab with context from file: '" + src_file + "'")
         l = multiprocessing.Lock()
-        for filename in sorted(os.listdir(src_folder)):
-            pool.apply_async(countInFile, args=(src_folder + '/' + filename,), callback = log_result)
+        batch = queue.get()
+        while not closed_queue and batch:
+            pool.apply_async(countInBatch, args=(batch,vocab,), callback = log_result)
+            # countInBatch(batch, vocab)
+            batch = queue.get()
 
         pool.close()
         pool.join()
 
+        input(vocab_context)
         logger.info("Saving word count to file 'word_count.pklz'")
-        save(counter, 'word_count')
+        save(vocab_context, 'word_count')
 
     logger.info("Loading word_count from disk...")
     word_count = load('word_count')

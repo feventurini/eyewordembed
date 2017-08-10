@@ -14,7 +14,7 @@ def float_or_blank_cast(s):
 		return 0.0
 
 def string_lower_nopunct_cast(s):
-	return s.strip(string.punctuation).lower()
+	return s.strip(string.punctuation).lower() if not s.startswith("'") else s[0] + s[1:].strip(string.punctuation).lower() 
 
 
 class DundeeTreebankParser():
@@ -132,9 +132,6 @@ class DundeeTreebankParser():
 					self.previous = row[self.map['WNUM']]
 					l.append(row[self.map["Word"]])
 				print(' '.join(l), file=o)
-
-
-
 
 
 if __name__ == '__main__':

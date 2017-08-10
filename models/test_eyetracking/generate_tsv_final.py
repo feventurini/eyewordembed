@@ -1,6 +1,7 @@
 import os
 import ast
 import numpy as np
+import sys
 
 def extract_log(logname, classifier=False):
 	if classifier:
@@ -26,7 +27,7 @@ def listdir(folder, filt=None):
 	return list(filter(lambda x: x.endswith(filt), l)) if filt else l
 
 if __name__ == '__main__':
-	folder = 'result_final'
+	folder = sys.argv[1]
 	classifier = False
 
 	for subfolder1 in os.listdir(folder):
@@ -54,5 +55,5 @@ if __name__ == '__main__':
 						print(i['name'], file=out)
 						del i['name']
 						for k in i:
-							print('{}\t{}'.format(k,i[k][-1]), file=out) #'\t'.join(map(str, i[k]))), file=out)
+							print('{}\t{}'.format(k,'\t'.join(map(str,i[k]))), file=out) #'\t'.join(map(str, i[k]))), file=out)
 

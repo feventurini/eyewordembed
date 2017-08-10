@@ -38,9 +38,9 @@ if __name__ == '__main__':
     gpu = -1
     unit = 100
     batchsize = 1000
-    epoch = 20
+    epoch = 10
     window = 1
-    out_path = 'test_eyetracking/result_final/'
+    out_path = 'test_eyetracking/result_upos_new'
 
     if gpu >= 0:
         chainer.cuda.get_device_from_id(gpu).use()
@@ -63,15 +63,10 @@ if __name__ == '__main__':
 
     targets = ['tot', 'firstpass', 'firstfix', 'regress']
 
-    epoch = 20
+    epoch = 10
     bins = False
 
-    wlen = True
-    pos = True
-    prev_fix = True
-    freq = True
-    surprisal = True
-
+    early_stopping = True
 
     modes = [(False, False, False, False, False),
                 (True, False, False, False, False),
@@ -87,7 +82,7 @@ if __name__ == '__main__':
 
     print(configs)
     index_selected = int(sys.argv[1]) - 1
-    freq, wlen, prev_fix, pos, surprisal, lr = configs[index_selected] 
+    freq, wlen, prev_fix, surprisal, pos, lr = configs[index_selected] 
 
     for target in targets: 
         for n_layers in n_layerss:
@@ -159,6 +154,14 @@ if __name__ == '__main__':
                             trainer.extend(extensions.Evaluator(val_iter, model, converter=convert, device=gpu))
 
                             trainer.extend(extensions.LogReport(log_name='{}.log'.format(name)))
+
+                            if early_stopping:
+                                if bins:
+                                    trainer.extend(extensions.snapshot_object(model, name + '.eyemodel'), 
+                                        trigger=chainer.training.triggers.MaxValueTrigger('validation/main/accuracy', trigger=(1, 'epoch')))
+                                else:
+                                    trainer.extend(extensions.snapshot_object(model, name + '.eyemodel'), 
+                                        trigger=chainer.training.triggers.MinValueTrigger('validation/main/loss', trigger=(1, 'epoch')))
                             
                             if bins:
                                 trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
@@ -168,12 +171,22 @@ if __name__ == '__main__':
                             trainer.extend(extensions.ProgressBar())
                             trainer.run()
 
+                            if early_stopping:
+                                S.load_npz(out_path + os.sep + str(epoch) + os.sep + model_type + os.sep + target + os.sep + name + '.eyemodel', model)
                             if not bins:
+                                # p = model.outlayer.W.shape[1]
+                                # n = len(val)
+                                # def r2_score(x, y, n, p):
+                                #     zx = (x-np.mean(x))/np.std(x, ddof=1)
+                                #     zy = (y-np.mean(y))/np.std(y, ddof=1)
+                                #     r = np.sum(zx*zy)/(len(x)-1)
+                                #     return r**2 - (1 - r**2) * (p)/(n-p-1)       
+
                                 def r2_score(x, y):
                                     zx = (x-np.mean(x))/np.std(x, ddof=1)
                                     zy = (y-np.mean(y))/np.std(y, ddof=1)
                                     r = np.sum(zx*zy)/(len(x)-1)
-                                    return r**2        
+                                    return r**2
 
                                 test_iter = EyetrackingBatchIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
                                 test_set = list(test_iter.next())
@@ -191,8 +204,7 @@ if __name__ == '__main__':
                                 # for t, i in zip(y, predictions):
                                 #     print(t, i)
                                 r2 = r2_score(y, predictions)
-                                print('R_squared coefficient: {}'.format(r2))
+                                # r2 = r2_score(y, predictions, n, p)
+                                print('Predicted r_squared coefficient: {}'.format(r2))
                                 with open(out_path + os.sep + str(epoch) + os.sep + model_type + os.sep + target + os.sep + name + '.r2', 'w+') as out:
-                                    print('R_squared coefficient: {}'.format(r2), file=out)
-
-                            S.save_npz(out_path + os.sep + str(epoch) + os.sep + model_type + os.sep + target + os.sep + name + '.eyemodel', model)
+                                    print('Predicted r_squared coefficient: {}'.format(r2), file=out)

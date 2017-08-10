@@ -166,10 +166,10 @@ if __name__ == '__main__':
 
     if early_stopping:
         if bins:
-            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+            trainer.extend(early_stopping_gensim(model, model_eyetracking, out_folder + os.sep + '{}'.format(name)), 
                 trigger=chainer.training.triggers.MaxValueTrigger('validation/main/accuracy', trigger=(1, 'epoch')))
         else:
-            trainer.extend(early_stopping_gensim(model, out_folder + os.sep + '{}.model'.format(name)), 
+            trainer.extend(early_stopping_gensim(model, model_eyetracking, out_folder + os.sep + '{}'.format(name)), 
                 trigger=chainer.training.triggers.MinValueTrigger('validation/main/loss', trigger=(1, 'epoch')))
 
     trainer.extend(ProgressBarWord2Vec(w2v_e, update_interval=1))

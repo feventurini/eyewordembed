@@ -22,7 +22,7 @@ import datetime
 
 unit = 100
 window = 5
-epoch = 20
+epoch = 10
 model_types = ['cbow', 'skipgram']
 out_type = 'ns'
 vocab = 'init_vocab'
@@ -102,7 +102,7 @@ else:
     # trick to force the words of the dundee corpus in
     save_corpus_count = model.corpus_count
     model.min_count = 0
-    dundee = gensim.models.word2vec.LineSentence('../dataset/trimmed_dundee.txt')
+    dundee = gensim.models.word2vec.LineSentence('../dataset/dundee_vocab.txt')
     model.build_vocab(dundee, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=True)
     model.corpus_count = save_corpus_count
     #
