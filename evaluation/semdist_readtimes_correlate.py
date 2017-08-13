@@ -13,7 +13,7 @@ import csv
 import string
 
 def string_lower_nopunct_cast(s):
-    return s.strip(string.punctuation).lower()
+    return s.strip(string.punctuation).lower() if not s.startswith("'") else s[0] + s[1:].strip(string.punctuation).lower() 
 
 def float_or_blank_cast(s):
     try:
@@ -34,6 +34,11 @@ if __name__ == '__main__':
     else:
         model = gensim.models.KeyedVectors.load_word2vec_format(args.input, binary=args.binary)
 
+    vocab = set()
+    with open('../dataset/dundee_vocab.txt') as f:
+        for line in f:
+            vocab.update(line.split())
+
     csv_path = '/media/fede/fedeProSD/eyewordembed/dataset/dundee_eyemovement/treebank/en_Dundee_DLT_freq_goldtok_gr.csv'
 
     dtp = dp.DundeeTreebankParser()
@@ -44,7 +49,7 @@ if __name__ == '__main__':
         dtp.initiateParser(firstrow)
         sentence = []
         reading_times = []
-        excluded = 0
+        excluded = set()
 
         sentence_num = -1
         semdists = []
@@ -63,13 +68,13 @@ if __name__ == '__main__':
                 sentence = []
                 reading_times = []
 
-            temp = list(filter(lambda x: x!='', map(string_lower_nopunct_cast, nltk.word_tokenize(row[dtp.map['Word']]))))
-            sub_words = list(filter(lambda x: x in model, temp))
-            excluded += (len(temp) - len(sub_words))
-            sentence += sub_words
-            t = float_or_blank_cast(row[dtp.map['Tot_fix_dur']])
-            tt = [t for i in range(len(sub_words))]
-            reading_times += tt
+            word = string_lower_nopunct_cast(row[dtp.map['Word']])
+            if word in vocab and word in model:
+                sentence.append(word)
+                t = float_or_blank_cast(row[dtp.map['Tot_fix_dur']])
+                reading_times.append(t)
+            else:
+                excluded.add(word)
 
     # print(times)
     # print(semdists)
@@ -80,5 +85,5 @@ if __name__ == '__main__':
     # times = np.array(times)[mask]
     # input(times)
 
-    print('Excluded tokens: {} out of {}'.format(excluded, len(semdists)))
+    print('Excluded tokens: {} out of {}'.format(len(excluded), len(semdists)))
     print('Pearson correlation coefficient: {}'.format(scipy.stats.pearsonr(semdists, times)[0]))

@@ -10,7 +10,7 @@ def listdir(folder, filt=None):
 
 if __name__ == '__main__':
 	src_folder = '../models/test_multitask_limit_vocab/result_final'
-	out_folder = 'eval_log_limit_vocab_final'
+	out_folder = 'eval_log_word2vec_limit_vocab'
 
 	for file in listdir(src_folder):
 		tar, model, filename = file.split(os.sep)[-3:]

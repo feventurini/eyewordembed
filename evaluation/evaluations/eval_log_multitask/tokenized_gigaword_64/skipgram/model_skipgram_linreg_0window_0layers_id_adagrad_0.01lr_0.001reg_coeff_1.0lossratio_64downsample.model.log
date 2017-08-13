@@ -1,0 +1,41 @@
+2017-08-11 11:21:35,342 : INFO : loading Word2Vec object from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_64downsample.model
+2017-08-11 11:21:35,919 : INFO : loading wv recursively from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_64downsample.model.wv.* with mmap=None
+2017-08-11 11:21:35,922 : INFO : loading syn0 from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_64downsample.model.wv.syn0.npy with mmap=None
+2017-08-11 11:21:36,641 : INFO : setting ignored attribute syn0norm to None
+2017-08-11 11:21:36,641 : INFO : loading syn1neg from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_64downsample.model.syn1neg.npy with mmap=None
+2017-08-11 11:21:37,359 : INFO : setting ignored attribute cum_table to None
+2017-08-11 11:21:37,360 : INFO : loaded ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_64downsample.model
+2017-08-11 11:21:37,804 : INFO : precomputing L2-norms of word weight vectors
+2017-08-11 11:21:40,694 : INFO : capital-common-countries: 89.5% (453/506)
+2017-08-11 11:21:55,090 : INFO : capital-world: 76.1% (2068/2717)
+2017-08-11 11:21:56,434 : INFO : currency: 18.7% (50/268)
+2017-08-11 11:22:08,484 : INFO : city-in-state: 15.1% (293/1945)
+2017-08-11 11:22:10,595 : INFO : family: 70.3% (267/380)
+2017-08-11 11:22:16,007 : INFO : gram1-adjective-to-adverb: 10.9% (101/930)
+2017-08-11 11:22:17,994 : INFO : gram2-opposite: 18.9% (72/380)
+2017-08-11 11:22:24,860 : INFO : gram3-comparative: 70.9% (944/1332)
+2017-08-11 11:22:29,036 : INFO : gram4-superlative: 54.6% (355/650)
+2017-08-11 11:22:34,854 : INFO : gram5-present-participle: 65.5% (570/870)
+2017-08-11 11:22:43,244 : INFO : gram6-nationality-adjective: 82.2% (1127/1371)
+2017-08-11 11:22:52,394 : INFO : gram7-past-tense: 54.0% (842/1560)
+2017-08-11 11:22:57,189 : INFO : gram8-plural: 50.1% (497/992)
+2017-08-11 11:23:01,456 : INFO : gram9-plural-verbs: 37.9% (266/702)
+2017-08-11 11:23:01,457 : INFO : total: 54.1% (7905/14603)
+2017-08-11 11:23:01,461 : INFO : Semantic: 3131/5816, Accuracy: 53.83%
+2017-08-11 11:23:01,461 : INFO : Syntactic: 4774/8787, Accuracy: 54.33%
+2017-08-11 11:23:02,002 : INFO : Pearson correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5591
+2017-08-11 11:23:02,002 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5661
+2017-08-11 11:23:02,002 : INFO : Pairs with unknown words ratio: 0.6%
+2017-08-11 11:23:02,017 : INFO : Pearson correlation coefficient: 0.56
+2017-08-11 11:23:02,018 : INFO : Spearman rank correlation coefficient: 0.57
+2017-08-11 11:23:02,424 : INFO : skipping invalid line #0 in ./evaluation_datasets/SimLex-999.txt
+2017-08-11 11:23:02,458 : INFO : Pearson correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3533
+2017-08-11 11:23:02,458 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3326
+2017-08-11 11:23:02,458 : INFO : Pairs with unknown words ratio: 0.1%
+2017-08-11 11:23:02,473 : INFO : Pearson correlation coefficient: 0.35
+2017-08-11 11:23:02,474 : INFO : Spearman rank correlation coefficient: 0.33
+2017-08-11 11:23:02,882 : INFO : Pearson correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.3129
+2017-08-11 11:23:02,882 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.2968
+2017-08-11 11:23:02,882 : INFO : Pairs with unknown words ratio: 0.2%
+2017-08-11 11:23:02,893 : INFO : Pearson correlation coefficient: 0.31
+2017-08-11 11:23:02,894 : INFO : Spearman rank correlation coefficient: 0.30

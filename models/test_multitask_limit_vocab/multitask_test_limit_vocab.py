@@ -265,6 +265,7 @@ if __name__ == '__main__':
         model.save(out_folder + os.sep + 'limit_vocab_{}.model'.format(name))
         S.save_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)
 
+    S.load_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)
     if not bins:
         def r2_score(x, y):
             zx = (x-np.mean(x))/np.std(x, ddof=1)

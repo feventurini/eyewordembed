@@ -6,6 +6,7 @@ import argparse
 from smart_open import smart_open
 import numpy as np
 import tensorflow as tf
+from nltk.corpus import stopwords
 #logger = logging.getLogger(__name__)
 
 def get_glove_info(glove_file_name):
@@ -39,6 +40,9 @@ if __name__ == '__main__':
     parser.add_argument( "-b", "--binary", 
                         required=False, action='store_true',
                         help="If word2vec model in binary format, set True, else False")
+    parser.add_argument( "-p", "--port", 
+                        required=False, type=int, default=6006,
+                        help="Tensorboard port")
     args = parser.parse_args()
 
     # load model
@@ -50,9 +54,16 @@ if __name__ == '__main__':
     if not os.path.isdir('log'):
         os.makedirs('log')
 
-    embedding = np.empty((len(model.index2word), len(model[model.index2word[0]])), dtype=np.float32)
+    vocab = set()
+    with open('../../dataset/dundee_vocab.txt') as f:
+        for line in f:
+            vocab.update(line.split())
+
+    filtered_index2word = list(filter(lambda x: x in vocab, model.index2word))
+
+    embedding = np.empty((len(filtered_index2word), len(model[model.index2word[0]])), dtype=np.float32)
     with open(os.path.join('log', 'metadata.tsv'), 'w+') as file_metadata:
-        for i, word in enumerate(model.index2word):
+        for i, word in enumerate(filtered_index2word):
             file_metadata.write(word + '\n')
             embedding[i] = model[word]
 
@@ -77,4 +88,4 @@ if __name__ == '__main__':
     saver = tf.train.Saver()
     saver.save(sess, os.path.join('log', "model.ckpt"))
 
-    os.system('tensorboard --logdir=log')
+    os.system('tensorboard --logdir=log --port={}'.format(args.port))

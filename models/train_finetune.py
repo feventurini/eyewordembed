@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 """Sample script of word embedding model.
 
 This code implements skip-gram model and continuous-bow model.
@@ -91,8 +91,8 @@ if __name__ == '__main__':
 
     optimizer = O.AdaGrad(0.01)
     optimizer.setup(model_eyetracking)
-    # l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
-    # optimizer.add_hook(l2_reg, 'l2')
+    l2_reg = chainer.optimizer.WeightDecay(reg_coeff)
+    optimizer.add_hook(l2_reg, 'l2')
 
     updater = chainer.training.StandardUpdater(train_iter, optimizer, converter=convert, device=gpu)
     trainer = chainer.training.Trainer(updater, (epoch, 'epoch'), out=out_folder)
@@ -110,5 +110,5 @@ if __name__ == '__main__':
 
     trainer.run()
 
-    model.save(os.path.join(out_folder, 'finetuned_gigaword_{}_{}_{}_eyetracking_'.format(os.path.basename(train_tarball), n_units, ('classifier' if bins else 'linreg'))) + 
-        str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.model')
+    model.save('finetuned_word2vec_pretrained.model')
+    S.save_npz('finetuned_word2vec_pretrained.eyemodel', model_eyetracking)

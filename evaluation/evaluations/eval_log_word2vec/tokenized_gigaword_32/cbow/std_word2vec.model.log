@@ -1,0 +1,41 @@
+2017-08-11 11:58:56,133 : INFO : loading Word2Vec object from ../models/test_multitask/result_final/tokenized_gigaword_32/cbow/std_word2vec.model
+2017-08-11 11:58:56,955 : INFO : loading wv recursively from ../models/test_multitask/result_final/tokenized_gigaword_32/cbow/std_word2vec.model.wv.* with mmap=None
+2017-08-11 11:58:56,959 : INFO : loading syn0 from ../models/test_multitask/result_final/tokenized_gigaword_32/cbow/std_word2vec.model.wv.syn0.npy with mmap=None
+2017-08-11 11:58:57,826 : INFO : setting ignored attribute syn0norm to None
+2017-08-11 11:58:57,826 : INFO : loading syn1neg from ../models/test_multitask/result_final/tokenized_gigaword_32/cbow/std_word2vec.model.syn1neg.npy with mmap=None
+2017-08-11 11:58:58,736 : INFO : setting ignored attribute cum_table to None
+2017-08-11 11:58:58,737 : INFO : loaded ../models/test_multitask/result_final/tokenized_gigaword_32/cbow/std_word2vec.model
+2017-08-11 11:58:59,486 : INFO : precomputing L2-norms of word weight vectors
+2017-08-11 11:59:03,929 : INFO : capital-common-countries: 74.9% (379/506)
+2017-08-11 11:59:23,036 : INFO : capital-world: 62.3% (1691/2715)
+2017-08-11 11:59:25,469 : INFO : currency: 15.6% (47/302)
+2017-08-11 11:59:39,359 : INFO : city-in-state: 10.0% (194/1945)
+2017-08-11 11:59:41,774 : INFO : family: 85.0% (260/306)
+2017-08-11 11:59:48,202 : INFO : gram1-adjective-to-adverb: 16.3% (152/930)
+2017-08-11 11:59:51,024 : INFO : gram2-opposite: 21.3% (81/380)
+2017-08-11 11:59:59,583 : INFO : gram3-comparative: 73.2% (975/1332)
+2017-08-11 12:00:03,428 : INFO : gram4-superlative: 56.0% (364/650)
+2017-08-11 12:00:08,179 : INFO : gram5-present-participle: 68.5% (596/870)
+2017-08-11 12:00:16,828 : INFO : gram6-nationality-adjective: 76.7% (1109/1445)
+2017-08-11 12:00:28,350 : INFO : gram7-past-tense: 55.1% (860/1560)
+2017-08-11 12:00:34,742 : INFO : gram8-plural: 51.3% (542/1056)
+2017-08-11 12:00:38,635 : INFO : gram9-plural-verbs: 50.7% (356/702)
+2017-08-11 12:00:38,637 : INFO : total: 51.7% (7606/14699)
+2017-08-11 12:00:38,640 : INFO : Semantic: 2571/5774, Accuracy: 44.53%
+2017-08-11 12:00:38,641 : INFO : Syntactic: 5035/8925, Accuracy: 56.41%
+2017-08-11 12:00:39,228 : INFO : Pearson correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5496
+2017-08-11 12:00:39,228 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5605
+2017-08-11 12:00:39,228 : INFO : Pairs with unknown words ratio: 0.3%
+2017-08-11 12:00:39,249 : INFO : Pearson correlation coefficient: 0.55
+2017-08-11 12:00:39,249 : INFO : Spearman rank correlation coefficient: 0.56
+2017-08-11 12:00:39,641 : INFO : skipping invalid line #0 in ./evaluation_datasets/SimLex-999.txt
+2017-08-11 12:00:39,665 : INFO : Pearson correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3399
+2017-08-11 12:00:39,666 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3158
+2017-08-11 12:00:39,666 : INFO : Pairs with unknown words ratio: 0.1%
+2017-08-11 12:00:39,686 : INFO : Pearson correlation coefficient: 0.34
+2017-08-11 12:00:39,686 : INFO : Spearman rank correlation coefficient: 0.32
+2017-08-11 12:00:40,230 : INFO : Pearson correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.2605
+2017-08-11 12:00:40,230 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.2386
+2017-08-11 12:00:40,230 : INFO : Pairs with unknown words ratio: 0.2%
+2017-08-11 12:00:40,250 : INFO : Pearson correlation coefficient: 0.26
+2017-08-11 12:00:40,251 : INFO : Spearman rank correlation coefficient: 0.24

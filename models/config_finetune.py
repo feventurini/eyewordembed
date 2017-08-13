@@ -1,6 +1,6 @@
 from chainer import functions as F
 
-train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_256.tar.bz2'
+train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_8.tar.bz2'
 
 # ---------------------------------------------- #
 ## EYETRACKING PARAMETERS
@@ -15,7 +15,7 @@ freq = True
 n_pos_units = 50
 n_hidden = 200
 n_layers = 0
-bins = True
+bins = False
 
 # ---------------------------------------------- #
 ## WORD2VEC PARAMETERS
@@ -39,7 +39,7 @@ vocab_folder = 'init_vocab'
 n_units = 300
 test = False
 out_folder = 'result'
-epoch = 20
+epoch = 10
 epoch_ratio = 1.0
 loss_ratio = 1.0
 batchsize_eyetracking = 1000

@@ -1,0 +1,6 @@
+SKIPGRAM model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.0reg_coeff_1.0lossratio_2downsample
+validation/main/loss	0.5700513064861298
+main/loss	0.6165872795714272
+SKIPGRAM model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_2downsample
+validation/main/loss	0.5733016014099122	0.5708830714225769	0.5760961294174194	0.5719868898391723	0.581951093673706
+main/loss	0.6167775044838587	0.5855006790823407	0.5823179251617856	0.5808088514539931	0.5800323635339737

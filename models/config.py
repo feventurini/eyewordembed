@@ -1,7 +1,7 @@
 from chainer import functions as F
 
-train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_1024.tar.bz2'
-
+train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_8192.tar.bz2'
+# train_tarball = '../dataset/brown_corpus.txt'
 # ---------------------------------------------- #
 ## EYETRACKING PARAMETERS
 gpu = -1

@@ -1,0 +1,41 @@
+2017-08-11 11:20:03,852 : INFO : loading Word2Vec object from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.0reg_coeff_1.0lossratio_64downsample.model
+2017-08-11 11:20:04,339 : INFO : loading wv recursively from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.0reg_coeff_1.0lossratio_64downsample.model.wv.* with mmap=None
+2017-08-11 11:20:04,342 : INFO : loading syn0 from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.0reg_coeff_1.0lossratio_64downsample.model.wv.syn0.npy with mmap=None
+2017-08-11 11:20:05,101 : INFO : setting ignored attribute syn0norm to None
+2017-08-11 11:20:05,101 : INFO : loading syn1neg from ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.0reg_coeff_1.0lossratio_64downsample.model.syn1neg.npy with mmap=None
+2017-08-11 11:20:05,808 : INFO : setting ignored attribute cum_table to None
+2017-08-11 11:20:05,808 : INFO : loaded ../models/test_multitask/result/tokenized_gigaword_64/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.0reg_coeff_1.0lossratio_64downsample.model
+2017-08-11 11:20:06,212 : INFO : precomputing L2-norms of word weight vectors
+2017-08-11 11:20:09,144 : INFO : capital-common-countries: 87.2% (441/506)
+2017-08-11 11:20:24,127 : INFO : capital-world: 75.5% (2051/2717)
+2017-08-11 11:20:25,551 : INFO : currency: 17.9% (48/268)
+2017-08-11 11:20:37,538 : INFO : city-in-state: 17.1% (332/1945)
+2017-08-11 11:20:40,405 : INFO : family: 68.4% (260/380)
+2017-08-11 11:20:45,865 : INFO : gram1-adjective-to-adverb: 11.9% (111/930)
+2017-08-11 11:20:48,109 : INFO : gram2-opposite: 17.6% (67/380)
+2017-08-11 11:20:54,650 : INFO : gram3-comparative: 71.4% (951/1332)
+2017-08-11 11:20:58,723 : INFO : gram4-superlative: 57.2% (372/650)
+2017-08-11 11:21:04,484 : INFO : gram5-present-participle: 69.7% (606/870)
+2017-08-11 11:21:11,586 : INFO : gram6-nationality-adjective: 81.4% (1116/1371)
+2017-08-11 11:21:21,094 : INFO : gram7-past-tense: 55.6% (867/1560)
+2017-08-11 11:21:27,225 : INFO : gram8-plural: 49.8% (494/992)
+2017-08-11 11:21:32,046 : INFO : gram9-plural-verbs: 40.5% (284/702)
+2017-08-11 11:21:32,047 : INFO : total: 54.8% (8000/14603)
+2017-08-11 11:21:32,051 : INFO : Semantic: 3132/5816, Accuracy: 53.85%
+2017-08-11 11:21:32,052 : INFO : Syntactic: 4868/8787, Accuracy: 55.40%
+2017-08-11 11:21:32,757 : INFO : Pearson correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5651
+2017-08-11 11:21:32,757 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5703
+2017-08-11 11:21:32,757 : INFO : Pairs with unknown words ratio: 0.6%
+2017-08-11 11:21:32,778 : INFO : Pearson correlation coefficient: 0.57
+2017-08-11 11:21:32,779 : INFO : Spearman rank correlation coefficient: 0.57
+2017-08-11 11:21:33,349 : INFO : skipping invalid line #0 in ./evaluation_datasets/SimLex-999.txt
+2017-08-11 11:21:33,394 : INFO : Pearson correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3502
+2017-08-11 11:21:33,395 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3300
+2017-08-11 11:21:33,395 : INFO : Pairs with unknown words ratio: 0.1%
+2017-08-11 11:21:33,417 : INFO : Pearson correlation coefficient: 0.35
+2017-08-11 11:21:33,418 : INFO : Spearman rank correlation coefficient: 0.33
+2017-08-11 11:21:33,945 : INFO : Pearson correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.2985
+2017-08-11 11:21:33,946 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.2894
+2017-08-11 11:21:33,946 : INFO : Pairs with unknown words ratio: 0.2%
+2017-08-11 11:21:33,961 : INFO : Pearson correlation coefficient: 0.30
+2017-08-11 11:21:33,962 : INFO : Spearman rank correlation coefficient: 0.29

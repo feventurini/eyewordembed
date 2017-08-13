@@ -1,0 +1,41 @@
+2017-08-11 10:51:24,157 : INFO : loading Word2Vec object from ../models/test_multitask/result/tokenized_gigaword_8/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_8downsample.model
+2017-08-11 10:51:24,759 : INFO : loading wv recursively from ../models/test_multitask/result/tokenized_gigaword_8/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_8downsample.model.wv.* with mmap=None
+2017-08-11 10:51:24,763 : INFO : loading syn0 from ../models/test_multitask/result/tokenized_gigaword_8/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_8downsample.model.wv.syn0.npy with mmap=None
+2017-08-11 10:51:25,665 : INFO : setting ignored attribute syn0norm to None
+2017-08-11 10:51:25,665 : INFO : loading syn1neg from ../models/test_multitask/result/tokenized_gigaword_8/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_8downsample.model.syn1neg.npy with mmap=None
+2017-08-11 10:51:26,570 : INFO : setting ignored attribute cum_table to None
+2017-08-11 10:51:26,570 : INFO : loaded ../models/test_multitask/result/tokenized_gigaword_8/skipgram/model_skipgram_linreg_0window_0layers_id_adagrad_0.01lr_0.001reg_coeff_1.0lossratio_8downsample.model
+2017-08-11 10:51:27,181 : INFO : precomputing L2-norms of word weight vectors
+2017-08-11 10:51:30,291 : INFO : capital-common-countries: 87.9% (445/506)
+2017-08-11 10:51:46,358 : INFO : capital-world: 78.4% (2179/2779)
+2017-08-11 10:51:47,898 : INFO : currency: 23.9% (64/268)
+2017-08-11 10:51:58,714 : INFO : city-in-state: 16.4% (319/1945)
+2017-08-11 10:52:00,488 : INFO : family: 76.1% (233/306)
+2017-08-11 10:52:05,754 : INFO : gram1-adjective-to-adverb: 15.4% (143/930)
+2017-08-11 10:52:08,001 : INFO : gram2-opposite: 22.9% (87/380)
+2017-08-11 10:52:15,972 : INFO : gram3-comparative: 72.8% (970/1332)
+2017-08-11 10:52:19,488 : INFO : gram4-superlative: 64.2% (417/650)
+2017-08-11 10:52:25,153 : INFO : gram5-present-participle: 69.9% (650/930)
+2017-08-11 10:52:34,009 : INFO : gram6-nationality-adjective: 84.6% (1222/1445)
+2017-08-11 10:52:43,142 : INFO : gram7-past-tense: 53.3% (832/1560)
+2017-08-11 10:52:49,308 : INFO : gram8-plural: 48.7% (514/1056)
+2017-08-11 10:52:53,434 : INFO : gram9-plural-verbs: 45.9% (322/702)
+2017-08-11 10:52:53,435 : INFO : total: 56.8% (8397/14789)
+2017-08-11 10:52:53,441 : INFO : Semantic: 3240/5804, Accuracy: 55.82%
+2017-08-11 10:52:53,441 : INFO : Syntactic: 5157/8985, Accuracy: 57.40%
+2017-08-11 10:52:54,049 : INFO : Pearson correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5830
+2017-08-11 10:52:54,050 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/wordsim353.txt: 0.5964
+2017-08-11 10:52:54,050 : INFO : Pairs with unknown words ratio: 0.3%
+2017-08-11 10:52:54,068 : INFO : Pearson correlation coefficient: 0.58
+2017-08-11 10:52:54,069 : INFO : Spearman rank correlation coefficient: 0.60
+2017-08-11 10:52:54,460 : INFO : skipping invalid line #0 in ./evaluation_datasets/SimLex-999.txt
+2017-08-11 10:52:54,484 : INFO : Pearson correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3614
+2017-08-11 10:52:54,484 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/SimLex-999.txt: 0.3428
+2017-08-11 10:52:54,484 : INFO : Pairs with unknown words ratio: 0.1%
+2017-08-11 10:52:54,504 : INFO : Pearson correlation coefficient: 0.36
+2017-08-11 10:52:54,504 : INFO : Spearman rank correlation coefficient: 0.34
+2017-08-11 10:52:55,051 : INFO : Pearson correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.2974
+2017-08-11 10:52:55,051 : INFO : Spearman rank-order correlation coefficient against ./evaluation_datasets/simverb-500-dev.txt: 0.2856
+2017-08-11 10:52:55,051 : INFO : Pairs with unknown words ratio: 0.2%
+2017-08-11 10:52:55,067 : INFO : Pearson correlation coefficient: 0.30
+2017-08-11 10:52:55,068 : INFO : Spearman rank correlation coefficient: 0.29

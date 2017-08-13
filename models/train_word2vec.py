@@ -16,7 +16,8 @@ import timing
 from multitask_batch_iter import MultitaskBatchIterator
 import datetime
 
-train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_2.tar.bz2'
+train_tarball = '../dataset/downsampled_gigaword/tokenized_gigaword_8192.tar.bz2'
+# train_tarball = '../dataset/brown_corpus.txt'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--unit', '-u', default=100, type=int,
@@ -98,7 +99,7 @@ else:
     # trick to force the words of the dundee corpus in
     save_corpus_count = model.corpus_count
     model.min_count = 0
-    dundee = gensim.models.word2vec.LineSentence('../dataset/trimmed_dundee.txt')
+    dundee = gensim.models.word2vec.LineSentence('../dataset/dundee_vocab.txt')
     model.build_vocab(dundee, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=True)
     model.corpus_count = save_corpus_count
     #
@@ -140,5 +141,5 @@ while batch_sentences:
 
 # model.train(sentences, total_words=None, epochs=model.iter, total_examples=model.corpus_count, queue_factor=2, report_delay=report_delay)
 
-# model.save(args.out + os.sep + "word2vec_gigaword_" + str(args.unit) + "_" + args.model + "_" + args.out_type + '_' + 
-#         str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + ".model")
+model.save(args.out + os.sep + "word2vec_gigaword_" + str(args.unit) + "_" + args.model + "_" + args.out_type + '_' + 
+        str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + ".model")

@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     bins = False
     model_w2v = ['cbow','skipgram']
-    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(2,n)]
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(0,2)]
     windows = [0]
     n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     else:
         raise Exception('Unknown model type: {}'.format(model))
 
-    out_folder = os.path.join('test_multitask/result', tarball.split('.')[0], model_word2vec)
+    out_folder = os.path.join('test_multitask/result_nan', tarball.split('.')[0], model_word2vec)
     train_tarball = os.path.join(tarball_folder, tarball)
 
     k = tarball.split('.')[0].split('_')[-1]
@@ -258,6 +258,7 @@ if __name__ == '__main__':
         model.save(out_folder + os.sep + '{}.model'.format(name))
         S.save_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)
 
+    S.load_npz(out_folder + os.sep + '{}.eyemodel'.format(name), model_eyetracking)
     if not bins:
         def r2_score(x, y):
             zx = (x-np.mean(x))/np.std(x, ddof=1)
