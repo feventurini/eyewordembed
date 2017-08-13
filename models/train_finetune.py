@@ -49,6 +49,15 @@ if __name__ == '__main__':
     else:
         logging.info("Building vocab...")
         model.build_vocab(sentences, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=False)
+
+        # trick to force the words of the dundee corpus in
+        save_corpus_count = model.corpus_count
+        model.min_count = 0
+        dundee = gensim.models.word2vec.LineSentence('../dataset/dundee_vocab.txt')
+        model.build_vocab(dundee, keep_raw_vocab=False, trim_rule=None, progress_per=100000, update=True)
+        model.corpus_count = save_corpus_count
+        #
+        
         logging.info("Vocabulary built")
         logging.info("Saving initial model with built vocabulary...")
         model.save(vocab_folder + os.sep + "init_vocab_" + os.path.basename(train_tarball) + "_{}.model".format(n_units))
