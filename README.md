@@ -30,13 +30,7 @@ The preprocessing folder contains all the code use for prepreprocessing both the
 - add_surprisal_dundee.py is the code used for adding surprisal to the dundee, given the KenLM n-gram models
 - dundee_parser.py was used to parse and preprocess the Dundee Treebank and produced the two folders dataset/dundee_parsed_gr and dataset/dundee_parsed
 
-The dataset folder was used to contain all the datasets, the KenLM language models and all of the subsample datasets. It currently provides just some samples due to the space constraints.
-- for the KenLM models, we only leave the 2-gram for reference
-- downsampled_gigaword contains some examples of Gigaword subsamples 
-- dundee_eyemovement/treebank contains the original Dundee Treebank + the one with added surprisal (in both cases is the version with the averaged measures from the 10 readers) (the treebank is available through university-wide license, as Gigaword)
-- dundee_parsed_gr contains the preprocessed and pickled data structures parsed from the Dundee Treebank with the 10 readers averaged. These are used during the training of the eye-tracking task 
-- dundee_parsed is the counterpart of the previous with the 10 readers separated, it was used for the training of the classifier (not reported in the dissertation)
-- create_hist.py was used to make histograms of the reading times distributions
+In the code, you may find often referenced the "dataset" folder. It was used to contain all the datasets, the KenLM language models and all of the subsample datasets. The directory is not available in the public repository for two reasons: the corpora are licensed, and the files are too big.
 
 The utilities folder contains supporting code (for I/O to file system and timing) used throughout the project
 
