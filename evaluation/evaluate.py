@@ -11,6 +11,16 @@ simlex_999_dataset = './evaluation_datasets/SimLex-999.txt'
 bats_folder = './evaluation_datasets/BATS_3.0'
 simverb_3500_dev_dataset = './evaluation_datasets/simverb-500-dev.txt'
 
+"""
+DISCLAIMER FOR PLAGIARISM: 
+The first two functions of this script are readapted from a gensim tutorial: 
+https://github.com/parulsethi/gensim/blob/wordrank_wrapper/docs/notebooks/Wordrank_comparisons.ipynb
+(see also: https://rare-technologies.com/wordrank-embedding-crowned-is-most-similar-to-king-not-word2vecs-canute/)
+
+gensim is available as free software under the LGPL license v2.1:
+https://github.com/RaRe-Technologies/gensim/blob/develop/COPYING
+"""
+
 def analogy_accuracy(model, questions_file):
     acc = model.accuracy(questions_file)
 

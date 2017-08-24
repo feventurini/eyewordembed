@@ -43,6 +43,12 @@ if __name__ == '__main__':
 
     dtp = dp.DundeeTreebankParser()
 
+    def cos(a,b):
+        den = np.linalg.norm(a)*np.linalg.norm(b)
+        if den == 0:
+            return np.nan
+        return np.sum(a*b)/(np.linalg.norm(a)*np.linalg.norm(b))
+
     with open(csv_path,'r') as f:
         r = csv.reader(f, delimiter='\t')
         firstrow = next(r)
@@ -63,8 +69,11 @@ if __name__ == '__main__':
                 for i in range(1,len(sentence)):
                     context = np.array([model[sentence[j]] for j in range(max(0,i-4),i)]) # range(0, i) 
                     context = np.sum(context, axis=0)
-                    semdists.append(scipy.spatial.distance.cosine(model[sentence[i]],context))
-                    times.append(reading_times[i])
+                    # print(-cos(model[sentence[i]], context))
+                    sd = -cos(model[sentence[i]], context)
+                    if not np.isnan(sd):
+                        semdists.append(sd)
+                        times.append(reading_times[i])
                 sentence = []
                 reading_times = []
 
@@ -80,10 +89,9 @@ if __name__ == '__main__':
     # print(semdists)
 
     # mask = np.array(times) != 0.0
-    # print(mask)
     # semdists = np.array(semdists)[mask]
     # times = np.array(times)[mask]
-    # input(times)
+    # times = np.log(times)
 
     print('Excluded tokens: {} out of {}'.format(len(excluded), len(semdists)))
     print('Pearson correlation coefficient: {}'.format(scipy.stats.pearsonr(semdists, times)[0]))

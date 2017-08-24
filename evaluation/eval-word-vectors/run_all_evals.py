@@ -8,8 +8,8 @@ def listdir(folder, filt=None):
 			l += listdir(os.path.join(root, d))
 	return set(filter(lambda x: x.endswith(filt), l)) if filt else l
 
-for file in listdir('../../models/test_multitask', '.model'):
-	vocab = 'full_vocab'
+for file in listdir('../../models/test_multitask_limit_vocab', '.model'):
+	vocab = 'limit_vocab'
 	tokens = file.split(os.sep)
 	if tokens[-1].startswith('std'):
 		downsample = tokens[5]

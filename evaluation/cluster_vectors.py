@@ -1,4 +1,5 @@
 from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
 from spherecluster import SphericalKMeans 
 from numbers import Number
 from pandas import DataFrame
@@ -6,6 +7,7 @@ import sys, codecs, numpy
 import gensim
 from six import iteritems
 from nltk.corpus import stopwords
+from matplotlib.pyplot import *
 
 class autovivify_list(dict):
   '''A pickleable version of collections.defaultdict'''
@@ -71,5 +73,11 @@ if __name__ == "__main__":
   cluster_inertia   = kmeans_model.inertia_
   cluster_to_words  = find_word_clusters(labels_array, cluster_labels)
 
-  for c in cluster_to_words:
-    print(cluster_to_words[c])
+
+  print(len(df), len(cluster_labels))
+
+  X_tsne = TSNE(n_components=2).fit_transform(df)
+  figure(figsize=(10, 5))
+  subplot(121)
+  scatter(X_tsne[:, 0], X_tsne[:, 1], c=cluster_labels)
+  show()

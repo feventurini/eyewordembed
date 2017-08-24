@@ -1,0 +1,5 @@
+As correctly reported in the MIT LICENSE file, this folder is taken from the repository https://github.com/mfaruqui/eval-word-vectors,
+(see also website http://www.wordvectors.org/).
+
+Some of the scripts were readpted to work with my project, but the bulk of the work is from the original authors:
+"Manaal Faruqui and Chris Dyer, Community Evaluation and Exchange of Word Vectors at wordvectors.org". 

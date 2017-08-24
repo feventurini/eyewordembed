@@ -56,6 +56,7 @@ if __name__ == '__main__':
     pos = True
     prev_fix = True
     freq = True
+    surprisal = True
     n_pos_units = 50
     out = F.tanh
     n_hidden = 200
@@ -80,12 +81,12 @@ if __name__ == '__main__':
             loss_func = F.mean_squared_error
 
         if bins:
-            model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50)
+            model = EyetrackingClassifier(n_vocab, n_units, n_participants, n_classes, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50)
         else:
-            model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, n_pos=n_pos, n_pos_units=50)
+            model = EyetrackingLinreg(n_vocab, n_units, loss_func, out, n_hidden=n_hidden, window=window, n_layers=n_layers, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, n_pos=n_pos, n_pos_units=50)
 
-        train_iter = EyetrackingBatchIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
-        val_iter = EyetrackingBatchIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, bins=bins)
+        train_iter = EyetrackingBatchIterator(train, window, batch_size, repeat=True, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
+        val_iter = EyetrackingBatchIterator(val, window, batch_size, repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
 
 
         optimizer = r(lr)

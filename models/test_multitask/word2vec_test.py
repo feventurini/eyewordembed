@@ -23,15 +23,15 @@ import datetime
 unit = 100
 window = 5
 epoch = 10
-model_types = ['cbow', 'skipgram']
+model_types = ['skipgram']
 out_type = 'ns'
 vocab = 'init_vocab'
 
 tarball_folder = '../dataset/downsampled_gigaword'
 n = 10
 
-model_w2v = ['skipgram', 'cbow']
-tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(2,n)]
+model_w2v = ['skipgram']
+tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(10,12)]
 
 configurations = []
 

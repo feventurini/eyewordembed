@@ -12,7 +12,7 @@ import timing
 
 if __name__ == '__main__':
     tar = '../dataset/downsampled_gigaword/tokenized_gigaword_1024.tar.bz2'
-    n = 3
+    n = 12
     out_folder = 'downsampled_gigaword'
     if not os.path.isdir('downsampled_gigaword'):
         os.makedirs('downsampled_gigaword')

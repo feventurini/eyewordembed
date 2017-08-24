@@ -1,3 +1,8 @@
+"""
+DISCLAIMER FOR PLAGIARISM:
+This class is readapted from a chainer extension, in order to provide a progress bar for the multitask setting
+chainer is available under MIT LICENSE: https://github.com/chainer/chainer/blob/master/LICENSE
+"""
 from __future__ import division
 import datetime
 import os

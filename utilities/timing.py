@@ -1,3 +1,9 @@
+"""
+DISCLAIMER FOR PLAGIARISM:
+this script is taken from the second answer to this stack overflow post:
+https://stackoverflow.com/questions/1557571/how-do-i-get-time-of-a-python-programs-execution/1557906
+"""
+
 import atexit
 from time import time
 from datetime import timedelta

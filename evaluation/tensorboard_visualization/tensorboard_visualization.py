@@ -1,5 +1,6 @@
 import gensim
 import sys
+import collections
 from tensorflow.contrib.tensorboard.plugins import projector
 import os
 import argparse
@@ -54,12 +55,15 @@ if __name__ == '__main__':
     if not os.path.isdir('log'):
         os.makedirs('log')
 
-    vocab = set()
+    # target_words = [line.strip().lower() for line in open("4000-most-common-english-words-csv.csv")][:2000]
+    vocab = collections.Counter()
     with open('../../dataset/dundee_vocab.txt') as f:
         for line in f:
             vocab.update(line.split())
-
-    filtered_index2word = list(filter(lambda x: x in vocab, model.index2word))
+    # target_words = dict(vocab.most_common(2000))
+    target_words = vocab
+    
+    filtered_index2word = list(filter(lambda x: x in target_words, model.index2word))
 
     embedding = np.empty((len(filtered_index2word), len(model[model.index2word[0]])), dtype=np.float32)
     with open(os.path.join('log', 'metadata.tsv'), 'w+') as file_metadata:
@@ -67,6 +71,11 @@ if __name__ == '__main__':
             file_metadata.write(word + '\n')
             embedding[i] = model[word]
 
+    """
+    DISCLAIMER for plagiarism: the following piece of code was readpted from the first answer to the stackoverflow post:
+    https://stackoverflow.com/questions/40849116/how-to-use-tensorboard-embedding-projector
+    """
+    
     # setup a TensorFlow session
     tf.reset_default_graph()
     sess = tf.InteractiveSession()

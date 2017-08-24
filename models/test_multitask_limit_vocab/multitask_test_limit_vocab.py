@@ -79,8 +79,8 @@ if __name__ == '__main__':
     dundee = '../dataset/dundee.txt'
 
     bins = False
-    model_w2v = ['cbow','skipgram']
-    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(2,n)]
+    model_w2v = ['skipgram']
+    tarballs = ['tokenized_gigaword_{}.tar.bz2'.format(2**(i+1)) for i in range(10,12)]
     windows = [0]
     n_layers = 0
     rule_name = {O.AdaGrad: 'adagrad'}
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     freq = True
     surprisal = True
     out_type = 'id'
-    reg_coeffs = [0.0, 0.001]
+    reg_coeffs = [0.001]
     loss_ratios = [1.0]
 
     configurations = []

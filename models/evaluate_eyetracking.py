@@ -59,7 +59,7 @@ def r2_score(x, y):
     r = np.sum(zx*zy)/(len(x)-1)
     return r**2        
 
-test_iter = EyetrackingBatchIterator(test, window_eyetracking, len(test), repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
+test_iter = EyetrackingBatchIterator(val, window_eyetracking, len(test), repeat=False, shuffle=True, wlen=wlen, pos=pos, prev_fix=prev_fix, freq=freq, surprisal=surprisal, bins=bins)
 test_set = list(test_iter.next())
 for t in test_iter:
     x, y = t

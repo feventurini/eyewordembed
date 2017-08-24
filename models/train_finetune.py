@@ -19,6 +19,8 @@ from chainer import optimizers as O
 from chainer import functions as F
 from chainer.training import extension as E
 from chainer.training import extensions
+from chainer import serializers as S
+
 import time
 
 import prepare_dataset as pd
